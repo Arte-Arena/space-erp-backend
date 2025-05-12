@@ -20,5 +20,7 @@ func main() {
 	mux.HandleFunc("POST /v1/leads", leads.CreateOne)
 	mux.HandleFunc("PATCH /v1/leads/{id}", leads.UpdateOne)
 
+	mux.HandleFunc("GET /v1/reports", leads.GetAll)
+
 	http.ListenAndServe(":8080", mux)
 }
