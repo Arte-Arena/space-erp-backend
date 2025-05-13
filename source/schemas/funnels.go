@@ -19,3 +19,35 @@ type Funnel struct {
 	CreatedAt time.Time     `json:"created_at" bson:"created_at,omitempty"`
 	UpdatedAt time.Time     `json:"updated_at" bson:"updated_at,omitempty"`
 }
+
+func (funnel *Funnel) Create() {
+
+}
+
+func (funnel *Funnel) Get() {
+
+}
+
+func (funnel *Funnel) Update() {
+
+}
+
+func (funnel *Funnel) Delete() {
+
+}
+
+func (funnel *Funnel) CreateStage() {
+
+}
+
+func (funnel *Funnel) UpdateStage() {
+
+}
+
+func (funnel *Funnel) DeleteStage() {
+
+}
+
+func (funnel *Funnel) GetStage() {
+
+}
