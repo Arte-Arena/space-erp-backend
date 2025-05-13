@@ -3,7 +3,10 @@ package main
 import (
 	"api/source/entities/funnels"
 	"api/source/entities/leads"
+	"api/source/utils"
+	"fmt"
 	"net/http"
+	"os"
 )
 
 func main() {
@@ -22,5 +25,5 @@ func main() {
 
 	mux.HandleFunc("GET /v1/reports", leads.GetAll)
 
-	http.ListenAndServe(":8080", mux)
+	http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv(utils.PORT)), mux)
 }
