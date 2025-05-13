@@ -10,10 +10,10 @@ import (
 	"os"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 func UpdateOne(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +42,7 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 
 	mongoURI := os.Getenv(utils.MONGODB_URI)
 	opts := options.Client().ApplyURI(mongoURI)
-	mongoClient, err := mongo.Connect(ctx, opts)
+	mongoClient, err := mongo.Connect(opts)
 	if err != nil {
 		w.WriteHeader(http.StatusBadGateway)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
