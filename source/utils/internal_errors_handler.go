@@ -4,6 +4,8 @@ import "fmt"
 
 const (
 	LEADS_INVALID_REQUEST_DATA = iota
+	CANNOT_CONNECT_TO_MONGODB
+	CANNOT_INSERT_LEAD_TO_MONGODB
 )
 
 func SendInternalError(internalErrorCode int) string {
