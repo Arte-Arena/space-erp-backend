@@ -15,12 +15,13 @@ const (
 	ENV_MONGODB_URI = "MONGODB_URI"
 
 	ENV_DEVELOPMENT = "development"
+	ENV_HOMOLOG     = "homolog"
 	ENV_RELEASE     = "production"
 )
 
 var allowedKeys = []string{ENV, ENV_PORT, ENV_MONGODB_URI}
 
-var allowedEnvValues = []string{ENV_DEVELOPMENT, ENV_RELEASE}
+var allowedEnvValues = []string{ENV_DEVELOPMENT, ENV_HOMOLOG, ENV_RELEASE}
 
 func LoadEnvVariables() {
 	workDir, err := os.Getwd()
