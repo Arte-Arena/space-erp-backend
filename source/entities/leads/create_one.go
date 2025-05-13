@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -22,6 +23,9 @@ func CreateOne(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	lead.CreatedAt = time.Now()
+	lead.UpdatedAt = time.Now()
 
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()

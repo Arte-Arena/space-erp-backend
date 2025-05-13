@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	MONGO_TIMEOUT    = 20 * time.Second
-	COLLECTION_LEADS = "leads"
+	MONGO_TIMEOUT      = 20 * time.Second
+	COLLECTION_LEADS   = "leads"
+	COLLECTION_FUNNELS = "funnels"
 )
 
 func GetDB() string {
