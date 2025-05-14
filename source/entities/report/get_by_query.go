@@ -1,13 +1,41 @@
 package report
 
-import "net/http"
+import (
+	"api/source/schemas"
+	"api/source/utils"
+	"encoding/json"
+	"net/http"
+)
 
 func GetByQuery(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 
-	params.Get("type")
-	params.Get("from")
-	params.Get("until")
+	reportType := params.Get("type")
+	reportTypeCheck := (reportType != schemas.REPORT_TYPE_CLIENTS) && (reportType != schemas.REPORT_TYPE_BUDGETS)
+	if reportTypeCheck {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: "Tipo de relatório inválido",
+		})
+		return
+	}
+
+	period := [2]string{"", ""}
+	from := params.Get("from")
+	until := params.Get("until")
+
+	fromValid := utils.IsValidDate(from)
+	untilValid := utils.IsValidDate(until)
+
+	if fromValid && untilValid {
+		period = [2]string{from, until}
+	} else if fromValid {
+		period = [2]string{from, ""}
+	} else if untilValid {
+		period = [2]string{"", until}
+	}
+
+	_ = period
 
 	params.Get("clients_total")
 	params.Get("clients_monthly_average")
