@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,9 +17,8 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-func UpdateOne(w http.ResponseWriter, r *http.Request) {
+func UpdateOneStage(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
-
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -28,8 +28,18 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	funnel := &schemas.Funnel{}
-	if err := json.NewDecoder(r.Body).Decode(&funnel); err != nil {
+	indexStr := r.PathValue("index")
+	index, err := strconv.Atoi(indexStr)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: "Índice de estágio inválido",
+		})
+		return
+	}
+
+	stage := &schemas.FunnelStage{}
+	if err := json.NewDecoder(r.Body).Decode(&stage); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.FUNNELS_INVALID_REQUEST_DATA),
@@ -55,22 +65,43 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_FUNNELS)
 
 	filter := bson.D{{Key: "_id", Value: id}}
+	funnel := &schemas.Funnel{}
+	err = collection.FindOne(ctx, filter).Decode(&funnel)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(schemas.ApiResponse{
+				Message: "Funil não encontrado",
+			})
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(schemas.ApiResponse{
+				Message: utils.SendInternalError(utils.CANNOT_FIND_FUNNEL_BY_ID_IN_MONGODB),
+			})
+		}
+		return
+	}
+
+	if index < 0 || index >= len(funnel.Stages) {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: "Índice de estágio fora dos limites",
+		})
+		return
+	}
 
 	updateDoc := bson.D{}
 
-	if funnel.Name != "" {
-		updateDoc = append(updateDoc, bson.E{Key: "name", Value: funnel.Name})
+	if stage.Name != "" {
+		updateDoc = append(updateDoc, bson.E{Key: "stages." + indexStr + ".name", Value: stage.Name})
 	}
-	if funnel.Type != "" {
-		updateDoc = append(updateDoc, bson.E{Key: "type", Value: funnel.Type})
-	}
-	if len(funnel.Stages) > 0 {
-		updateDoc = append(updateDoc, bson.E{Key: "stages", Value: funnel.Stages})
+	if len(stage.RelatedLeads) > 0 {
+		updateDoc = append(updateDoc, bson.E{Key: "stages." + indexStr + ".related_leads", Value: stage.RelatedLeads})
 	}
 
 	updateDoc = append(updateDoc, bson.E{Key: "updated_at", Value: time.Now()})
 
-	if len(updateDoc) == 0 {
+	if len(updateDoc) == 1 {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: "Nenhum campo para atualizar foi fornecido",
@@ -79,7 +110,6 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 	}
 
 	update := bson.D{{Key: "$set", Value: updateDoc}}
-
 	result, err := collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
