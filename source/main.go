@@ -11,6 +11,8 @@ import (
 )
 
 func main() {
+	utils.LoadEnvVariables()
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /v1/funnels", funnels.GetAll)
