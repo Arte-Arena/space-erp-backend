@@ -8,6 +8,7 @@ import (
 
 func SendResponse(w http.ResponseWriter, statusCode int, message string, data any, internalErrorCode int) {
 	if internalErrorCode != 0 {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: SendInternalError(internalErrorCode),
@@ -21,6 +22,7 @@ func SendResponse(w http.ResponseWriter, statusCode int, message string, data an
 	}
 
 	if (message != "") && (data == nil) {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: message,
@@ -29,6 +31,7 @@ func SendResponse(w http.ResponseWriter, statusCode int, message string, data an
 	}
 
 	if (message == "") && (data != nil) {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Data: data,
@@ -36,6 +39,7 @@ func SendResponse(w http.ResponseWriter, statusCode int, message string, data an
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(schemas.ApiResponse{
 		Data:    data,
