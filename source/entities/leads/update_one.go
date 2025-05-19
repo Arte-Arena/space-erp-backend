@@ -52,11 +52,11 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 	if lead.Name != "" {
 		updateDoc = append(updateDoc, bson.E{Key: "name", Value: lead.Name})
 	}
+	if lead.Nickname != "" {
+		updateDoc = append(updateDoc, bson.E{Key: "nickname", Value: lead.Nickname})
+	}
 	if lead.Phone != "" {
 		updateDoc = append(updateDoc, bson.E{Key: "phone", Value: lead.Phone})
-	}
-	if lead.Document != "" {
-		updateDoc = append(updateDoc, bson.E{Key: "document", Value: lead.Document})
 	}
 	if lead.Type != "" {
 		updateDoc = append(updateDoc, bson.E{Key: "type", Value: lead.Type})
@@ -73,17 +73,23 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 	if lead.UniqueID != "" {
 		updateDoc = append(updateDoc, bson.E{Key: "unique_id", Value: lead.UniqueID})
 	}
-	if lead.Classification != "" {
-		updateDoc = append(updateDoc, bson.E{Key: "classification", Value: lead.Classification})
+	if lead.Rating != "" {
+		updateDoc = append(updateDoc, bson.E{Key: "classification", Value: lead.Rating})
 	}
 	if lead.Notes != "" {
 		updateDoc = append(updateDoc, bson.E{Key: "notes", Value: lead.Notes})
 	}
-	if len(lead.RelatedQuotes) > 0 {
-		updateDoc = append(updateDoc, bson.E{Key: "related_quotes", Value: lead.RelatedQuotes})
+	if len(lead.RelatedBudgets) > 0 {
+		updateDoc = append(updateDoc, bson.E{Key: "related_budgets", Value: lead.RelatedBudgets})
 	}
 	if len(lead.RelatedOrders) > 0 {
 		updateDoc = append(updateDoc, bson.E{Key: "related_orders", Value: lead.RelatedOrders})
+	}
+	if !lead.RelatedClient.IsZero() {
+		updateDoc = append(updateDoc, bson.E{Key: "related_client", Value: lead.RelatedClient})
+	}
+	if !lead.Responsible.IsZero() {
+		updateDoc = append(updateDoc, bson.E{Key: "responsible", Value: lead.Responsible})
 	}
 
 	updateDoc = append(updateDoc, bson.E{Key: "updated_at", Value: time.Now()})
