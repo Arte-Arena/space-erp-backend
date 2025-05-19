@@ -5,7 +5,6 @@ import (
 	"api/source/schemas"
 	"api/source/utils"
 	"context"
-	"encoding/json"
 	"net/http"
 	"os"
 
@@ -22,10 +21,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	opts := options.Client().ApplyURI(mongoURI)
 	mongoClient, err := mongo.Connect(opts)
 	if err != nil {
-		w.WriteHeader(http.StatusBadGateway)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB),
-		})
+		utils.SendResponse(w, http.StatusBadGateway, "", nil, utils.CANNOT_CONNECT_TO_MONGODB)
 		return
 	}
 	defer mongoClient.Disconnect(ctx)
@@ -36,25 +32,16 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 
 	cursor, err := collection.Find(ctx, filter)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.CANNOT_FIND_LEADS_IN_MONGODB),
-		})
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_LEADS_IN_MONGODB)
 		return
 	}
 	defer cursor.Close(ctx)
 
 	leads := []schemas.Lead{}
 	if err := cursor.All(ctx, &leads); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.CANNOT_FIND_LEADS_IN_MONGODB),
-		})
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_LEADS_IN_MONGODB)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(schemas.ApiResponse{
-		Data: leads,
-	})
+	utils.SendResponse(w, http.StatusOK, "", leads, 0)
 }

@@ -3,7 +3,6 @@ package report
 import (
 	"api/source/schemas"
 	"api/source/utils"
-	"encoding/json"
 	"net/http"
 )
 
@@ -13,10 +12,7 @@ func GetByQuery(w http.ResponseWriter, r *http.Request) {
 	reportType := params.Get("type")
 	reportTypeCheck := (reportType != schemas.REPORT_TYPE_CLIENTS) && (reportType != schemas.REPORT_TYPE_BUDGETS)
 	if reportTypeCheck {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: "Tipo de relatório inválido",
-		})
+		utils.SendResponse(w, http.StatusBadRequest, "Tipo de relatório inválido", nil, 0)
 		return
 	}
 

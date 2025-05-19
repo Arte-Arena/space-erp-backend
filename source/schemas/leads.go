@@ -23,19 +23,3 @@ type Lead struct {
 	Classification string          `json:"classification,omitempty" bson:"classification,omitempty"`
 	Notes          string          `json:"notes,omitempty" bson:"notes,omitempty"`
 }
-
-func (lead *Lead) Get() {
-
-}
-
-func (lead *Lead) Update() {
-
-}
-
-func (lead *Lead) Delete() {
-
-}
-
-func (lead *Lead) Create() {
-
-}

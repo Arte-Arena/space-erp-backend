@@ -21,19 +21,13 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.INVALID_FUNNEL_ID_FORMAT),
-		})
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.INVALID_FUNNEL_ID_FORMAT)
 		return
 	}
 
 	funnel := &schemas.Funnel{}
 	if err := json.NewDecoder(r.Body).Decode(&funnel); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.FUNNELS_INVALID_REQUEST_DATA),
-		})
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.FUNNELS_INVALID_REQUEST_DATA)
 		return
 	}
 
@@ -44,10 +38,7 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 	opts := options.Client().ApplyURI(mongoURI)
 	mongoClient, err := mongo.Connect(opts)
 	if err != nil {
-		w.WriteHeader(http.StatusBadGateway)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB),
-		})
+		utils.SendResponse(w, http.StatusBadGateway, "", nil, utils.CANNOT_CONNECT_TO_MONGODB)
 		return
 	}
 	defer mongoClient.Disconnect(ctx)
@@ -71,10 +62,7 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 	updateDoc = append(updateDoc, bson.E{Key: "updated_at", Value: time.Now()})
 
 	if len(updateDoc) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: "Nenhum campo para atualizar foi fornecido",
-		})
+		utils.SendResponse(w, http.StatusBadRequest, "Nenhum campo para atualizar foi fornecido", nil, 0)
 		return
 	}
 
@@ -82,20 +70,14 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 
 	result, err := collection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.CANNOT_UPDATE_FUNNEL_IN_MONGODB),
-		})
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_UPDATE_FUNNEL_IN_MONGODB)
 		return
 	}
 
 	if result.MatchedCount == 0 {
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: "Funil não encontrado",
-		})
+		utils.SendResponse(w, http.StatusNotFound, "Funil não encontrado", nil, 0)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	utils.SendResponse(w, http.StatusOK, "", nil, 0)
 }

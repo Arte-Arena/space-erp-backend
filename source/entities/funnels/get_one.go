@@ -5,7 +5,6 @@ import (
 	"api/source/schemas"
 	"api/source/utils"
 	"context"
-	"encoding/json"
 	"net/http"
 	"os"
 
@@ -20,10 +19,7 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.INVALID_FUNNEL_ID_FORMAT),
-		})
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.INVALID_FUNNEL_ID_FORMAT)
 		return
 	}
 
@@ -34,10 +30,7 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 	opts := options.Client().ApplyURI(mongoURI)
 	mongoClient, err := mongo.Connect(opts)
 	if err != nil {
-		w.WriteHeader(http.StatusBadGateway)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB),
-		})
+		utils.SendResponse(w, http.StatusBadGateway, "", nil, utils.CANNOT_CONNECT_TO_MONGODB)
 		return
 	}
 	defer mongoClient.Disconnect(ctx)
@@ -50,21 +43,12 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 	err = collection.FindOne(ctx, filter).Decode(&funnel)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(schemas.ApiResponse{
-				Message: "Funil não encontrado",
-			})
+			utils.SendResponse(w, http.StatusNotFound, "Funil não encontrado", nil, 0)
 		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(schemas.ApiResponse{
-				Message: utils.SendInternalError(utils.CANNOT_FIND_FUNNEL_BY_ID_IN_MONGODB),
-			})
+			utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_FUNNEL_BY_ID_IN_MONGODB)
 		}
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(schemas.ApiResponse{
-		Data: funnel,
-	})
+	utils.SendResponse(w, http.StatusOK, "", funnel, 0)
 }

@@ -2,10 +2,8 @@ package funnels
 
 import (
 	"api/source/database"
-	"api/source/schemas"
 	"api/source/utils"
 	"context"
-	"encoding/json"
 	"net/http"
 	"os"
 
@@ -20,10 +18,7 @@ func DeleteOne(w http.ResponseWriter, r *http.Request) {
 
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.INVALID_FUNNEL_ID_FORMAT),
-		})
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.INVALID_FUNNEL_ID_FORMAT)
 		return
 	}
 
@@ -34,10 +29,7 @@ func DeleteOne(w http.ResponseWriter, r *http.Request) {
 	opts := options.Client().ApplyURI(mongoURI)
 	mongoClient, err := mongo.Connect(opts)
 	if err != nil {
-		w.WriteHeader(http.StatusBadGateway)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB),
-		})
+		utils.SendResponse(w, http.StatusBadGateway, "", nil, utils.CANNOT_CONNECT_TO_MONGODB)
 		return
 	}
 	defer mongoClient.Disconnect(ctx)
@@ -48,20 +40,14 @@ func DeleteOne(w http.ResponseWriter, r *http.Request) {
 
 	result, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.CANNOT_DELETE_FUNNEL_FROM_MONGODB),
-		})
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_DELETE_FUNNEL_FROM_MONGODB)
 		return
 	}
 
 	if result.DeletedCount == 0 {
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: "Funil não encontrado",
-		})
+		utils.SendResponse(w, http.StatusNotFound, "Funil não encontrado", nil, 0)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	utils.SendResponse(w, http.StatusOK, "", nil, 0)
 }

@@ -17,10 +17,7 @@ import (
 func CreateOne(w http.ResponseWriter, r *http.Request) {
 	funnel := &schemas.Funnel{}
 	if err := json.NewDecoder(r.Body).Decode(&funnel); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.FUNNELS_INVALID_REQUEST_DATA),
-		})
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.FUNNELS_INVALID_REQUEST_DATA)
 		return
 	}
 
@@ -34,10 +31,7 @@ func CreateOne(w http.ResponseWriter, r *http.Request) {
 	opts := options.Client().ApplyURI(mongoURI)
 	mongoClient, err := mongo.Connect(ctx, opts)
 	if err != nil {
-		w.WriteHeader(http.StatusBadGateway)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB),
-		})
+		utils.SendResponse(w, http.StatusBadGateway, "", nil, utils.CANNOT_CONNECT_TO_MONGODB)
 		return
 	}
 	defer mongoClient.Disconnect(ctx)
@@ -46,12 +40,9 @@ func CreateOne(w http.ResponseWriter, r *http.Request) {
 
 	_, err = collection.InsertOne(ctx, funnel)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.CANNOT_INSERT_FUNNEL_TO_MONGODB),
-		})
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_INSERT_FUNNEL_TO_MONGODB)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	utils.SendResponse(w, http.StatusCreated, "", nil, 0)
 }
