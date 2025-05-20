@@ -13,13 +13,14 @@ const (
 	ENV         = "ENV"
 	PORT        = "PORT"
 	MONGODB_URI = "MONGODB_URI"
+	MYSQL_URI   = "MYSQL_URI"
 
 	ENV_DEVELOPMENT = "development"
 	ENV_HOMOLOG     = "homolog"
 	ENV_RELEASE     = "production"
 )
 
-var allowedKeys = []string{ENV, PORT, MONGODB_URI}
+var allowedKeys = []string{ENV, PORT, MONGODB_URI, MYSQL_URI}
 
 var allowedEnvValues = []string{ENV_DEVELOPMENT, ENV_HOMOLOG, ENV_RELEASE}
 

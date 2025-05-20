@@ -19,7 +19,6 @@ func main() {
 	mux.HandleFunc("GET /v1/funnels/{id}", funnels.GetOne)
 	mux.HandleFunc("POST /v1/funnels", funnels.CreateOne)
 	mux.HandleFunc("PATCH /v1/funnels/{id}", funnels.UpdateOne)
-	mux.HandleFunc("PATCH /v1/funnels/{id}/stages/{index}", funnels.UpdateOneStage)
 	mux.HandleFunc("DELETE /v1/funnels/{id}", funnels.DeleteOne)
 
 	mux.HandleFunc("GET /v1/leads", leads.GetAll)
