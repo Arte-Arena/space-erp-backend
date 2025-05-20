@@ -2,7 +2,6 @@ package funnels
 
 import (
 	"api/source/database"
-	"api/source/schemas"
 	"api/source/utils"
 	"context"
 	"net/http"
@@ -37,18 +36,56 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_FUNNELS)
 
-	filter := bson.D{{Key: "_id", Value: id}}
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.D{{Key: "_id", Value: id}}}},
+		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$stages"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_LEADS},
+			{Key: "localField", Value: "stages.related_leads"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "stages.related_leads_data"},
+		}}},
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_BUDGETS},
+			{Key: "localField", Value: "stages.related_budgets"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "stages.related_budgets_data"},
+		}}},
+		{{Key: "$addFields", Value: bson.D{
+			{Key: "stages.related_leads", Value: "$stages.related_leads_data"},
+			{Key: "stages.related_budgets", Value: "$stages.related_budgets_data"},
+		}}},
+		{{Key: "$project", Value: bson.D{
+			{Key: "stages.related_leads_data", Value: 0},
+			{Key: "stages.related_budgets_data", Value: 0},
+		}}},
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: "$_id"},
+			{Key: "name", Value: bson.D{{Key: "$first", Value: "$name"}}},
+			{Key: "type", Value: bson.D{{Key: "$first", Value: "$type"}}},
+			{Key: "stages", Value: bson.D{{Key: "$push", Value: "$stages"}}},
+			{Key: "created_at", Value: bson.D{{Key: "$first", Value: "$created_at"}}},
+			{Key: "updated_at", Value: bson.D{{Key: "$first", Value: "$updated_at"}}},
+		}}},
+	}
 
-	funnel := &schemas.Funnel{}
-	err = collection.FindOne(ctx, filter).Decode(&funnel)
+	cursor, err := collection.Aggregate(ctx, pipeline)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			utils.SendResponse(w, http.StatusNotFound, "Funil não encontrado", nil, 0)
-		} else {
-			utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_FUNNEL_BY_ID_IN_MONGODB)
-		}
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_FUNNEL_BY_ID_IN_MONGODB)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var results []bson.M
+	if err = cursor.All(ctx, &results); err != nil {
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_FUNNEL_BY_ID_IN_MONGODB)
 		return
 	}
 
-	utils.SendResponse(w, http.StatusOK, "", funnel, 0)
+	if len(results) == 0 {
+		utils.SendResponse(w, http.StatusNotFound, "Funil não encontrado", nil, 0)
+		return
+	}
+
+	utils.SendResponse(w, http.StatusOK, "", results[0], 0)
 }
