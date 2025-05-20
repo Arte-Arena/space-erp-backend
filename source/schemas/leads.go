@@ -8,9 +8,10 @@ import (
 
 type Lead struct {
 	ID             bson.ObjectID   `json:"id,omitempty" bson:"_id,omitempty"`
+	OldID          string          `json:"old_id" bson:"old_id"`
 	Name           string          `json:"name,omitempty" bson:"name,omitempty"`
+	Nickname       string          `json:"nickname,omitempty" bson:"nickname,omitempty"`
 	Phone          string          `json:"phone,omitempty" bson:"phone,omitempty"`
-	Document       string          `json:"document,omitempty" bson:"document,omitempty"`
 	Type           string          `json:"type,omitempty" bson:"type,omitempty"`
 	Segment        string          `json:"segment,omitempty" bson:"segment,omitempty"`
 	CreatedAt      time.Time       `json:"created_at" bson:"created_at,omitempty"`
@@ -18,8 +19,10 @@ type Lead struct {
 	Status         string          `json:"status,omitempty" bson:"status,omitempty"`
 	Source         string          `json:"source,omitempty" bson:"source,omitempty"`
 	UniqueID       string          `json:"unique_id,omitempty" bson:"unique_id,omitempty"`
-	RelatedQuotes  []bson.ObjectID `json:"related_quotes,omitempty" bson:"related_quotes,omitempty"`
+	RelatedBudgets []bson.ObjectID `json:"related_budgets,omitempty" bson:"related_budgets,omitempty"`
 	RelatedOrders  []bson.ObjectID `json:"related_orders,omitempty" bson:"related_orders,omitempty"`
-	Classification string          `json:"classification,omitempty" bson:"classification,omitempty"`
+	RelatedClient  bson.ObjectID   `json:"related_client,omitempty" bson:"related_client,omitempty"`
+	Rating         string          `json:"rating,omitempty" bson:"rating,omitempty"`
 	Notes          string          `json:"notes,omitempty" bson:"notes,omitempty"`
+	Responsible    bson.ObjectID   `json:"responsible,omitempty" bson:"responsible,omitempty"`
 }
