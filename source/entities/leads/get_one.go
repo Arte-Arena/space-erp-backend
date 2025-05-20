@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -18,7 +17,7 @@ import (
 func GetOne(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 
-	id, err := primitive.ObjectIDFromHex(idStr)
+	id, err := bson.ObjectIDFromHex(idStr)
 	if err != nil {
 		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.INVALID_LEAD_ID_FORMAT)
 		return
@@ -96,7 +95,7 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 
 	result := results[0]
 
-	if relatedOrders, ok := result["related_orders"].(primitive.A); ok && len(relatedOrders) > 0 {
+	if relatedOrders, ok := result["related_orders"].(bson.A); ok && len(relatedOrders) > 0 {
 		orderOldIDs := make([]int, 0)
 		for _, orderObj := range relatedOrders {
 			if orderMap, isMap := orderObj.(bson.M); isMap {
@@ -116,7 +115,7 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if relatedBudgets, ok := result["related_budgets"].(primitive.A); ok && len(relatedBudgets) > 0 {
+	if relatedBudgets, ok := result["related_budgets"].(bson.A); ok && len(relatedBudgets) > 0 {
 		budgetOldIDs := make([]int, 0)
 		for _, budgetObj := range relatedBudgets {
 			if budgetMap, isMap := budgetObj.(bson.M); isMap {

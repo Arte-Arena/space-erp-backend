@@ -11,7 +11,6 @@ import (
 	"os"
 	"strconv"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -120,7 +119,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i, lead := range leads {
-		if relatedOrders, ok := lead["related_orders"].(primitive.A); ok && len(relatedOrders) > 0 {
+		if relatedOrders, ok := lead["related_orders"].(bson.A); ok && len(relatedOrders) > 0 {
 			orderOldIDs := make([]int, 0)
 			for _, orderObj := range relatedOrders {
 				if orderMap, isMap := orderObj.(bson.M); isMap {
@@ -140,7 +139,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if relatedBudgets, ok := lead["related_budgets"].(primitive.A); ok && len(relatedBudgets) > 0 {
+		if relatedBudgets, ok := lead["related_budgets"].(bson.A); ok && len(relatedBudgets) > 0 {
 			budgetOldIDs := make([]int, 0)
 			for _, budgetObj := range relatedBudgets {
 				if budgetMap, isMap := budgetObj.(bson.M); isMap {

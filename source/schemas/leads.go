@@ -22,7 +22,7 @@ type Lead struct {
 	RelatedBudgets []bson.ObjectID `json:"related_budgets,omitempty" bson:"related_budgets,omitempty"`
 	RelatedOrders  []bson.ObjectID `json:"related_orders,omitempty" bson:"related_orders,omitempty"`
 	RelatedClient  bson.ObjectID   `json:"related_client,omitempty" bson:"related_client,omitempty"`
-	Rating         string          `json:"classification,omitempty" bson:"classification,omitempty"`
+	Rating         string          `json:"rating,omitempty" bson:"rating,omitempty"`
 	Notes          string          `json:"notes,omitempty" bson:"notes,omitempty"`
 	Responsible    bson.ObjectID   `json:"responsible,omitempty" bson:"responsible,omitempty"`
 }

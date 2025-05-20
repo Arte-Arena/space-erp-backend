@@ -10,7 +10,6 @@ import (
 	"os"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -76,11 +75,11 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i, funnel := range funnels {
-		stages, hasStages := funnel["stages"].(primitive.A)
+		stages, hasStages := funnel["stages"].(bson.A)
 		if hasStages {
 			for j, stageObj := range stages {
 				if stage, isStage := stageObj.(bson.M); isStage {
-					if relatedBudgets, ok := stage["related_budgets"].(primitive.A); ok && len(relatedBudgets) > 0 {
+					if relatedBudgets, ok := stage["related_budgets"].(bson.A); ok && len(relatedBudgets) > 0 {
 						budgetOldIDs := make([]int, 0)
 						for _, budgetObj := range relatedBudgets {
 							if budgetMap, isMap := budgetObj.(bson.M); isMap {
@@ -100,7 +99,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 
-					if relatedOrders, ok := stage["related_orders"].(primitive.A); ok && len(relatedOrders) > 0 {
+					if relatedOrders, ok := stage["related_orders"].(bson.A); ok && len(relatedOrders) > 0 {
 						orderOldIDs := make([]int, 0)
 						for _, orderObj := range relatedOrders {
 							if orderMap, isMap := orderObj.(bson.M); isMap {

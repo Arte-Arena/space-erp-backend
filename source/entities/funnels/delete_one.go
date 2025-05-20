@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -16,7 +15,7 @@ import (
 func DeleteOne(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 
-	id, err := primitive.ObjectIDFromHex(idStr)
+	id, err := bson.ObjectIDFromHex(idStr)
 	if err != nil {
 		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.INVALID_FUNNEL_ID_FORMAT)
 		return
