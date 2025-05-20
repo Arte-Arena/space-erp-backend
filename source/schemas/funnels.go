@@ -7,8 +7,9 @@ import (
 )
 
 type FunnelStage struct {
-	Name         string          `json:"name,omitempty" bson:"name,omitempty"`
-	RelatedLeads []bson.ObjectID `json:"related_leads,omitempty" bson:"related_leads,omitempty"`
+	Name           string          `json:"name,omitempty" bson:"name,omitempty"`
+	RelatedLeads   []bson.ObjectID `json:"related_leads,omitempty" bson:"related_leads,omitempty"`
+	RelatedBudgets []bson.ObjectID `json:"related_budgets,omitempty" bson:"related_budgets,omitempty"`
 }
 
 type Funnel struct {
