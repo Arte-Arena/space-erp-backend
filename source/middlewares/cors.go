@@ -37,7 +37,7 @@ func Cors(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Max-Age", "3600")
 
 		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
+			utils.SendResponse(w, http.StatusOK, "", nil, 0)
 			return
 		}
 

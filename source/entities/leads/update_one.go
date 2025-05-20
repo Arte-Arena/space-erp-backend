@@ -10,7 +10,6 @@ import (
 	"os"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -19,21 +18,15 @@ import (
 func UpdateOne(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 
-	id, err := primitive.ObjectIDFromHex(idStr)
+	id, err := bson.ObjectIDFromHex(idStr)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.INVALID_LEAD_ID_FORMAT),
-		})
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.INVALID_LEAD_ID_FORMAT)
 		return
 	}
 
 	lead := &schemas.Lead{}
 	if err := json.NewDecoder(r.Body).Decode(&lead); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.LEADS_INVALID_REQUEST_DATA),
-		})
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.LEADS_INVALID_REQUEST_DATA)
 		return
 	}
 
@@ -44,10 +37,7 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 	opts := options.Client().ApplyURI(mongoURI)
 	mongoClient, err := mongo.Connect(opts)
 	if err != nil {
-		w.WriteHeader(http.StatusBadGateway)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB),
-		})
+		utils.SendResponse(w, http.StatusBadGateway, "", nil, utils.CANNOT_CONNECT_TO_MONGODB)
 		return
 	}
 	defer mongoClient.Disconnect(ctx)
@@ -61,11 +51,11 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 	if lead.Name != "" {
 		updateDoc = append(updateDoc, bson.E{Key: "name", Value: lead.Name})
 	}
+	if lead.Nickname != "" {
+		updateDoc = append(updateDoc, bson.E{Key: "nickname", Value: lead.Nickname})
+	}
 	if lead.Phone != "" {
 		updateDoc = append(updateDoc, bson.E{Key: "phone", Value: lead.Phone})
-	}
-	if lead.Document != "" {
-		updateDoc = append(updateDoc, bson.E{Key: "document", Value: lead.Document})
 	}
 	if lead.Type != "" {
 		updateDoc = append(updateDoc, bson.E{Key: "type", Value: lead.Type})
@@ -82,26 +72,29 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 	if lead.UniqueID != "" {
 		updateDoc = append(updateDoc, bson.E{Key: "unique_id", Value: lead.UniqueID})
 	}
-	if lead.Classification != "" {
-		updateDoc = append(updateDoc, bson.E{Key: "classification", Value: lead.Classification})
+	if lead.Rating != "" {
+		updateDoc = append(updateDoc, bson.E{Key: "rating", Value: lead.Rating})
 	}
 	if lead.Notes != "" {
 		updateDoc = append(updateDoc, bson.E{Key: "notes", Value: lead.Notes})
 	}
-	if len(lead.RelatedQuotes) > 0 {
-		updateDoc = append(updateDoc, bson.E{Key: "related_quotes", Value: lead.RelatedQuotes})
+	if len(lead.RelatedBudgets) > 0 {
+		updateDoc = append(updateDoc, bson.E{Key: "related_budgets", Value: lead.RelatedBudgets})
 	}
 	if len(lead.RelatedOrders) > 0 {
 		updateDoc = append(updateDoc, bson.E{Key: "related_orders", Value: lead.RelatedOrders})
+	}
+	if !lead.RelatedClient.IsZero() {
+		updateDoc = append(updateDoc, bson.E{Key: "related_client", Value: lead.RelatedClient})
+	}
+	if !lead.Responsible.IsZero() {
+		updateDoc = append(updateDoc, bson.E{Key: "responsible", Value: lead.Responsible})
 	}
 
 	updateDoc = append(updateDoc, bson.E{Key: "updated_at", Value: time.Now()})
 
 	if len(updateDoc) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: "Nenhum campo para atualizar foi fornecido",
-		})
+		utils.SendResponse(w, http.StatusBadRequest, "Nenhum campo para atualizar foi fornecido", nil, 0)
 		return
 	}
 
@@ -109,20 +102,14 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 
 	result, err := collection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.CANNOT_UPDATE_LEAD_IN_MONGODB),
-		})
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_UPDATE_LEAD_IN_MONGODB)
 		return
 	}
 
 	if result.MatchedCount == 0 {
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: "Lead não encontrado",
-		})
+		utils.SendResponse(w, http.StatusNotFound, "Lead não encontrado", nil, 0)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	utils.SendResponse(w, http.StatusOK, "", nil, 0)
 }

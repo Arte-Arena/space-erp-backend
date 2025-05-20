@@ -7,8 +7,9 @@ import (
 )
 
 type FunnelStage struct {
-	Name         string          `json:"name,omitempty" bson:"name,omitempty"`
-	RelatedLeads []bson.ObjectID `json:"related_leads,omitempty" bson:"related_leads,omitempty"`
+	Name           string          `json:"name,omitempty" bson:"name,omitempty"`
+	RelatedLeads   []bson.ObjectID `json:"related_leads,omitempty" bson:"related_leads,omitempty"`
+	RelatedBudgets []bson.ObjectID `json:"related_budgets,omitempty" bson:"related_budgets,omitempty"`
 }
 
 type Funnel struct {
@@ -18,36 +19,4 @@ type Funnel struct {
 	Stages    []FunnelStage `json:"stages,omitempty" bson:"stages,omitempty"`
 	CreatedAt time.Time     `json:"created_at" bson:"created_at,omitempty"`
 	UpdatedAt time.Time     `json:"updated_at" bson:"updated_at,omitempty"`
-}
-
-func (funnel *Funnel) Create() {
-
-}
-
-func (funnel *Funnel) Get() {
-
-}
-
-func (funnel *Funnel) Update() {
-
-}
-
-func (funnel *Funnel) Delete() {
-
-}
-
-func (funnel *Funnel) CreateStage() {
-
-}
-
-func (funnel *Funnel) UpdateStage() {
-
-}
-
-func (funnel *Funnel) DeleteStage() {
-
-}
-
-func (funnel *Funnel) GetStage() {
-
 }
