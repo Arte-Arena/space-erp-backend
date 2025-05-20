@@ -2,12 +2,15 @@ package funnels
 
 import (
 	"api/source/database"
+	"api/source/entities/budgets"
+	"api/source/entities/orders"
 	"api/source/utils"
 	"context"
 	"net/http"
 	"os"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -70,6 +73,58 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	if err := cursor.All(ctx, &funnels); err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_FUNNELS_IN_MONGODB)
 		return
+	}
+
+	for i, funnel := range funnels {
+		stages, hasStages := funnel["stages"].(primitive.A)
+		if hasStages {
+			for j, stageObj := range stages {
+				if stage, isStage := stageObj.(bson.M); isStage {
+					if relatedBudgets, ok := stage["related_budgets"].(primitive.A); ok && len(relatedBudgets) > 0 {
+						budgetOldIDs := make([]int, 0)
+						for _, budgetObj := range relatedBudgets {
+							if budgetMap, isMap := budgetObj.(bson.M); isMap {
+								if oldID, hasOldID := budgetMap["old_id"]; hasOldID {
+									if oldIDInt, canConvert := oldID.(int64); canConvert {
+										budgetOldIDs = append(budgetOldIDs, int(oldIDInt))
+									}
+								}
+							}
+						}
+
+						if len(budgetOldIDs) > 0 {
+							oldBudgets, err := budgets.GetManyOld(budgetOldIDs)
+							if err == nil && oldBudgets != nil {
+								stage["related_budgets_old_data"] = oldBudgets
+							}
+						}
+					}
+
+					if relatedOrders, ok := stage["related_orders"].(primitive.A); ok && len(relatedOrders) > 0 {
+						orderOldIDs := make([]int, 0)
+						for _, orderObj := range relatedOrders {
+							if orderMap, isMap := orderObj.(bson.M); isMap {
+								if oldID, hasOldID := orderMap["old_id"]; hasOldID {
+									if oldIDInt, canConvert := oldID.(int64); canConvert {
+										orderOldIDs = append(orderOldIDs, int(oldIDInt))
+									}
+								}
+							}
+						}
+
+						if len(orderOldIDs) > 0 {
+							oldOrders, err := orders.GetManyOld(orderOldIDs)
+							if err == nil && oldOrders != nil {
+								stage["related_orders_old_data"] = oldOrders
+							}
+						}
+					}
+
+					stages[j] = stage
+				}
+			}
+			funnels[i]["stages"] = stages
+		}
 	}
 
 	utils.SendResponse(w, http.StatusOK, "", funnels, 0)

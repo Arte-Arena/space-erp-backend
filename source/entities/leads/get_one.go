@@ -2,6 +2,8 @@ package leads
 
 import (
 	"api/source/database"
+	"api/source/entities/budgets"
+	"api/source/entities/orders"
 	"api/source/utils"
 	"context"
 	"net/http"
@@ -79,5 +81,47 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SendResponse(w, http.StatusOK, "", results[0], 0)
+	result := results[0]
+
+	if relatedOrders, ok := result["related_orders"].(primitive.A); ok && len(relatedOrders) > 0 {
+		orderOldIDs := make([]int, 0)
+		for _, orderObj := range relatedOrders {
+			if orderMap, isMap := orderObj.(bson.M); isMap {
+				if oldID, hasOldID := orderMap["old_id"]; hasOldID {
+					if oldIDInt, canConvert := oldID.(int64); canConvert {
+						orderOldIDs = append(orderOldIDs, int(oldIDInt))
+					}
+				}
+			}
+		}
+
+		if len(orderOldIDs) > 0 {
+			oldOrders, err := orders.GetManyOld(orderOldIDs)
+			if err == nil && oldOrders != nil {
+				result["related_orders_old_data"] = oldOrders
+			}
+		}
+	}
+
+	if relatedBudgets, ok := result["related_budgets"].(primitive.A); ok && len(relatedBudgets) > 0 {
+		budgetOldIDs := make([]int, 0)
+		for _, budgetObj := range relatedBudgets {
+			if budgetMap, isMap := budgetObj.(bson.M); isMap {
+				if oldID, hasOldID := budgetMap["old_id"]; hasOldID {
+					if oldIDInt, canConvert := oldID.(int64); canConvert {
+						budgetOldIDs = append(budgetOldIDs, int(oldIDInt))
+					}
+				}
+			}
+		}
+
+		if len(budgetOldIDs) > 0 {
+			oldBudgets, err := budgets.GetManyOld(budgetOldIDs)
+			if err == nil && oldBudgets != nil {
+				result["related_budgets_old_data"] = oldBudgets
+			}
+		}
+	}
+
+	utils.SendResponse(w, http.StatusOK, "", result, 0)
 }
