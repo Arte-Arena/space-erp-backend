@@ -3,14 +3,20 @@ package main
 import (
 	"api/source/entities/funnels"
 	"api/source/entities/leads"
+	"api/source/middlewares"
+	"api/source/utils"
+	"fmt"
 	"net/http"
+	"os"
 )
 
 func main() {
+	utils.LoadEnvVariables()
+
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /v1/funnels", funnels.GetOne)
-	mux.HandleFunc("GET /v1/funnels/{id}", funnels.GetAll)
+	mux.HandleFunc("GET /v1/funnels", funnels.GetAll)
+	mux.HandleFunc("GET /v1/funnels/{id}", funnels.GetOne)
 	mux.HandleFunc("POST /v1/funnels", funnels.CreateOne)
 	mux.HandleFunc("PATCH /v1/funnels/{id}", funnels.UpdateOne)
 	mux.HandleFunc("DELETE /v1/funnels/{id}", funnels.DeleteOne)
@@ -22,5 +28,5 @@ func main() {
 
 	mux.HandleFunc("GET /v1/reports", leads.GetAll)
 
-	http.ListenAndServe(":8080", mux)
+	http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv(utils.PORT)), middlewares.SecurityHeaders(middlewares.Cors(mux)))
 }
