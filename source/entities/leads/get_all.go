@@ -2,7 +2,6 @@ package leads
 
 import (
 	"api/source/database"
-	"api/source/schemas"
 	"api/source/utils"
 	"context"
 	"math"
@@ -63,19 +62,42 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 
 	totalPages := int64(math.Ceil(float64(totalItems) / float64(pageSize)))
 
-	findOptions := options.Find().
-		SetSkip(skip).
-		SetLimit(pageSize).
-		SetSort(bson.D{{Key: "created_at", Value: -1}})
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: filter}},
+		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
+		{{Key: "$skip", Value: skip}},
+		{{Key: "$limit", Value: pageSize}},
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_BUDGETS},
+			{Key: "localField", Value: "related_budgets"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "related_budgets"},
+		}}},
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_ORDERS},
+			{Key: "localField", Value: "related_orders"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "related_orders"},
+		}}},
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_USERS},
+			{Key: "localField", Value: "responsible"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "responsible_data"},
+		}}},
+		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$responsible_data"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
+		{{Key: "$addFields", Value: bson.D{{Key: "responsible", Value: "$responsible_data"}}}},
+		{{Key: "$project", Value: bson.D{{Key: "responsible_data", Value: 0}}}},
+	}
 
-	cursor, err := collection.Find(ctx, filter, findOptions)
+	cursor, err := collection.Aggregate(ctx, pipeline)
 	if err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_LEADS_IN_MONGODB)
 		return
 	}
 	defer cursor.Close(ctx)
 
-	leads := []schemas.Lead{}
+	var leads []bson.M
 	if err := cursor.All(ctx, &leads); err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_LEADS_IN_MONGODB)
 		return

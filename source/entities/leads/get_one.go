@@ -2,7 +2,6 @@ package leads
 
 import (
 	"api/source/database"
-	"api/source/schemas"
 	"api/source/utils"
 	"context"
 	"net/http"
@@ -37,18 +36,48 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_LEADS)
 
-	filter := bson.D{{Key: "_id", Value: id}}
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.D{{Key: "_id", Value: id}}}},
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_BUDGETS},
+			{Key: "localField", Value: "related_budgets"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "related_budgets"},
+		}}},
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_ORDERS},
+			{Key: "localField", Value: "related_orders"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "related_orders"},
+		}}},
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_USERS},
+			{Key: "localField", Value: "responsible"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "responsible_data"},
+		}}},
+		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$responsible_data"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
+		{{Key: "$addFields", Value: bson.D{{Key: "responsible", Value: "$responsible_data"}}}},
+		{{Key: "$project", Value: bson.D{{Key: "responsible_data", Value: 0}}}},
+	}
 
-	lead := &schemas.Lead{}
-	err = collection.FindOne(ctx, filter).Decode(&lead)
+	cursor, err := collection.Aggregate(ctx, pipeline)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			utils.SendResponse(w, http.StatusNotFound, "Lead não encontrado", nil, 0)
-		} else {
-			utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_LEAD_BY_ID_IN_MONGODB)
-		}
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_LEAD_BY_ID_IN_MONGODB)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var results []bson.M
+	if err = cursor.All(ctx, &results); err != nil {
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_LEAD_BY_ID_IN_MONGODB)
 		return
 	}
 
-	utils.SendResponse(w, http.StatusOK, "", lead, 0)
+	if len(results) == 0 {
+		utils.SendResponse(w, http.StatusNotFound, "Lead não encontrado", nil, 0)
+		return
+	}
+
+	utils.SendResponse(w, http.StatusOK, "", results[0], 0)
 }
