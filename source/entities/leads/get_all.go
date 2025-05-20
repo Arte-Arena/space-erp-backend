@@ -88,9 +88,22 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 			{Key: "foreignField", Value: "_id"},
 			{Key: "as", Value: "responsible_data"},
 		}}},
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_CLIENTS},
+			{Key: "localField", Value: "related_client"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "related_client_data"},
+		}}},
 		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$responsible_data"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
-		{{Key: "$addFields", Value: bson.D{{Key: "responsible", Value: "$responsible_data"}}}},
-		{{Key: "$project", Value: bson.D{{Key: "responsible_data", Value: 0}}}},
+		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$related_client_data"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
+		{{Key: "$addFields", Value: bson.D{
+			{Key: "responsible", Value: "$responsible_data"},
+			{Key: "related_client", Value: "$related_client_data"},
+		}}},
+		{{Key: "$project", Value: bson.D{
+			{Key: "responsible_data", Value: 0},
+			{Key: "related_client_data", Value: 0},
+		}}},
 	}
 
 	cursor, err := collection.Aggregate(ctx, pipeline)
