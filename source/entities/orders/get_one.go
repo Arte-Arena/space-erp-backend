@@ -1,4 +1,4 @@
-package budgets
+package orders
 
 import (
 	"api/source/database"
@@ -17,7 +17,7 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 
 	id, err := bson.ObjectIDFromHex(idStr)
 	if err != nil {
-		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.INVALID_BUDGET_ID_FORMAT)
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.INVALID_ORDER_ID_FORMAT)
 		return
 	}
 
@@ -33,26 +33,26 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 	}
 	defer mongoClient.Disconnect(ctx)
 
-	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_BUDGETS)
+	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_ORDERS)
 
 	filter := bson.D{{Key: "_id", Value: id}}
 
 	var result bson.M
 	err = collection.FindOne(ctx, filter).Decode(&result)
 	if err == mongo.ErrNoDocuments {
-		utils.SendResponse(w, http.StatusNotFound, "Orçamento não encontrado", nil, 0)
+		utils.SendResponse(w, http.StatusNotFound, "Pedido não encontrado", nil, 0)
 		return
 	}
 	if err != nil {
-		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_BUDGET_BY_ID_IN_MONGODB)
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_ORDER_BY_ID_IN_MONGODB)
 		return
 	}
 
 	if oldID, hasOldID := result["old_id"]; hasOldID {
 		if oldIDInt, canConvert := oldID.(int64); canConvert {
-			oldBudget, err := GetOneOld(int(oldIDInt))
-			if err == nil && oldBudget != nil {
-				result["old_data"] = oldBudget
+			oldOrder, err := GetOneOld(int(oldIDInt))
+			if err == nil && oldOrder != nil {
+				result["old_data"] = oldOrder
 			}
 		}
 	}
