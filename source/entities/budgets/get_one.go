@@ -17,7 +17,7 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 
 	id, err := bson.ObjectIDFromHex(idStr)
 	if err != nil {
-		utils.SendResponse(w, http.StatusBadRequest, "Formato de ID de orçamento inválido", nil, 0)
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.INVALID_BUDGET_ID_FORMAT)
 		return
 	}
 
@@ -44,7 +44,7 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_LEAD_BY_ID_IN_MONGODB)
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_BUDGET_BY_ID_IN_MONGODB)
 		return
 	}
 
