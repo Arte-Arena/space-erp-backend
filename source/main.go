@@ -1,6 +1,7 @@
 package main
 
 import (
+	"api/source/entities/clients"
 	"api/source/entities/funnels"
 	"api/source/entities/leads"
 	"api/source/middlewares"
@@ -25,6 +26,9 @@ func main() {
 	mux.HandleFunc("GET /v1/leads/{id}", leads.GetOne)
 	mux.HandleFunc("POST /v1/leads", leads.CreateOne)
 	mux.HandleFunc("PATCH /v1/leads/{id}", leads.UpdateOne)
+
+	mux.HandleFunc("GET /v1/clients", clients.GetAll)
+	mux.HandleFunc("GET /v1/clients/{id}", clients.GetOne)
 
 	mux.HandleFunc("GET /v1/reports", leads.GetAll)
 
