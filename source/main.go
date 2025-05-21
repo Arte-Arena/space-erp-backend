@@ -5,6 +5,7 @@ import (
 	"api/source/entities/clients"
 	"api/source/entities/funnels"
 	"api/source/entities/leads"
+	"api/source/entities/orders"
 	"api/source/middlewares"
 	"api/source/utils"
 	"fmt"
@@ -33,6 +34,9 @@ func main() {
 
 	mux.HandleFunc("GET /v1/budgets", budgets.GetAll)
 	mux.HandleFunc("GET /v1/budgets/{id}", budgets.GetOne)
+
+	mux.HandleFunc("GET /v1/orders", orders.GetAll)
+	mux.HandleFunc("GET /v1/orders/{id}", orders.GetOne)
 
 	mux.HandleFunc("GET /v1/reports", leads.GetAll)
 
