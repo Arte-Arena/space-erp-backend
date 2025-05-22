@@ -78,10 +78,10 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 	if lead.Notes != "" {
 		updateDoc = append(updateDoc, bson.E{Key: "notes", Value: lead.Notes})
 	}
-	if len(lead.RelatedBudgets) > 0 {
+	if len(lead.RelatedBudgets) >= 0 && lead.RelatedBudgets != nil {
 		updateDoc = append(updateDoc, bson.E{Key: "related_budgets", Value: lead.RelatedBudgets})
 	}
-	if len(lead.RelatedOrders) > 0 {
+	if len(lead.RelatedOrders) >= 0 && lead.RelatedOrders != nil {
 		updateDoc = append(updateDoc, bson.E{Key: "related_orders", Value: lead.RelatedOrders})
 	}
 	if r.URL.Query().Get("unlink_client") == "true" || lead.UnlinkClient {
