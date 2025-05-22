@@ -2,8 +2,6 @@ package leads
 
 import (
 	"api/source/database"
-	"api/source/entities/budgets"
-	"api/source/entities/orders"
 	"api/source/utils"
 	"context"
 	"math"
@@ -118,48 +116,6 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	if err := cursor.All(ctx, &leads); err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_LEADS_IN_MONGODB)
 		return
-	}
-
-	for i, lead := range leads {
-		if relatedOrders, ok := lead["related_orders"].(bson.A); ok && len(relatedOrders) > 0 {
-			orderOldIDs := make([]int, 0)
-			for _, orderObj := range relatedOrders {
-				if orderMap, isMap := orderObj.(bson.M); isMap {
-					if oldID, hasOldID := orderMap["old_id"]; hasOldID {
-						if oldIDInt, canConvert := oldID.(int64); canConvert {
-							orderOldIDs = append(orderOldIDs, int(oldIDInt))
-						}
-					}
-				}
-			}
-
-			if len(orderOldIDs) > 0 {
-				oldOrders, err := orders.GetManyOld(orderOldIDs)
-				if err == nil && oldOrders != nil {
-					leads[i]["related_orders_old_data"] = oldOrders
-				}
-			}
-		}
-
-		if relatedBudgets, ok := lead["related_budgets"].(bson.A); ok && len(relatedBudgets) > 0 {
-			budgetOldIDs := make([]int, 0)
-			for _, budgetObj := range relatedBudgets {
-				if budgetMap, isMap := budgetObj.(bson.M); isMap {
-					if oldID, hasOldID := budgetMap["old_id"]; hasOldID {
-						if oldIDInt, canConvert := oldID.(int64); canConvert {
-							budgetOldIDs = append(budgetOldIDs, int(oldIDInt))
-						}
-					}
-				}
-			}
-
-			if len(budgetOldIDs) > 0 {
-				oldBudgets, err := budgets.GetManyOld(budgetOldIDs)
-				if err == nil && oldBudgets != nil {
-					leads[i]["related_budgets_old_data"] = oldBudgets
-				}
-			}
-		}
 	}
 
 	response := map[string]any{
