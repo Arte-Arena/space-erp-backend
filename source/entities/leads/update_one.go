@@ -69,8 +69,8 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 	if lead.Source != "" {
 		updateDoc = append(updateDoc, bson.E{Key: "source", Value: lead.Source})
 	}
-	if lead.UniqueID != "" {
-		updateDoc = append(updateDoc, bson.E{Key: "unique_id", Value: lead.UniqueID})
+	if lead.PlatformId != "" {
+		updateDoc = append(updateDoc, bson.E{Key: "platform_id", Value: lead.PlatformId})
 	}
 	if lead.Rating != "" {
 		updateDoc = append(updateDoc, bson.E{Key: "rating", Value: lead.Rating})
