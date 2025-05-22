@@ -8,7 +8,6 @@ import (
 
 type Lead struct {
 	ID             bson.ObjectID   `json:"id,omitempty" bson:"_id,omitempty"`
-	OldID          string          `json:"old_id" bson:"old_id"`
 	Name           string          `json:"name,omitempty" bson:"name,omitempty"`
 	Nickname       string          `json:"nickname,omitempty" bson:"nickname,omitempty"`
 	Phone          string          `json:"phone,omitempty" bson:"phone,omitempty"`
@@ -18,7 +17,7 @@ type Lead struct {
 	UpdatedAt      time.Time       `json:"updated_at" bson:"updated_at,omitempty"`
 	Status         string          `json:"status,omitempty" bson:"status,omitempty"`
 	Source         string          `json:"source,omitempty" bson:"source,omitempty"`
-	UniqueID       string          `json:"unique_id,omitempty" bson:"unique_id,omitempty"`
+	PlatformId     string          `json:"platform_id,omitempty" bson:"platform_id,omitempty"`
 	RelatedBudgets []bson.ObjectID `json:"related_budgets,omitempty" bson:"related_budgets,omitempty"`
 	RelatedOrders  []bson.ObjectID `json:"related_orders,omitempty" bson:"related_orders,omitempty"`
 	RelatedClient  bson.ObjectID   `json:"related_client,omitempty" bson:"related_client,omitempty"`
