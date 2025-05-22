@@ -25,4 +25,5 @@ type Lead struct {
 	Rating         string          `json:"rating,omitempty" bson:"rating,omitempty"`
 	Notes          string          `json:"notes,omitempty" bson:"notes,omitempty"`
 	Responsible    bson.ObjectID   `json:"responsible,omitempty" bson:"responsible,omitempty"`
+	UnlinkClient   bool            `json:"unlink_client,omitempty" bson:"-"`
 }
