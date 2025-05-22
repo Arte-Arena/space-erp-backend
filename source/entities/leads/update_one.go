@@ -84,7 +84,9 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 	if len(lead.RelatedOrders) > 0 {
 		updateDoc = append(updateDoc, bson.E{Key: "related_orders", Value: lead.RelatedOrders})
 	}
-	if !lead.RelatedClient.IsZero() {
+	if r.URL.Query().Get("unlink_client") == "true" || lead.UnlinkClient {
+		updateDoc = append(updateDoc, bson.E{Key: "related_client", Value: nil})
+	} else if !lead.RelatedClient.IsZero() {
 		updateDoc = append(updateDoc, bson.E{Key: "related_client", Value: lead.RelatedClient})
 	}
 	if !lead.Responsible.IsZero() {
