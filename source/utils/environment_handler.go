@@ -10,17 +10,18 @@ import (
 )
 
 const (
-	ENV         = "ENV"
-	PORT        = "PORT"
-	MONGODB_URI = "MONGODB_URI"
-	MYSQL_URI   = "MYSQL_URI"
+	ENV             = "ENV"
+	PORT            = "PORT"
+	MONGODB_URI     = "MONGODB_URI"
+	MYSQL_URI       = "MYSQL_URI"
+	LARAVEL_API_URL = "LARAVEL_API_URL"
 
 	ENV_DEVELOPMENT = "development"
 	ENV_HOMOLOG     = "homolog"
 	ENV_RELEASE     = "production"
 )
 
-var allowedKeys = []string{ENV, PORT, MONGODB_URI, MYSQL_URI}
+var allowedKeys = []string{ENV, PORT, MONGODB_URI, MYSQL_URI, LARAVEL_API_URL}
 
 var allowedEnvValues = []string{ENV_DEVELOPMENT, ENV_HOMOLOG, ENV_RELEASE}
 
