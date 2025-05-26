@@ -23,6 +23,7 @@ func main() {
 	mux.HandleFunc("POST /v1/funnels", funnels.CreateOne)
 	mux.HandleFunc("PATCH /v1/funnels/{id}", funnels.UpdateOne)
 	mux.HandleFunc("DELETE /v1/funnels/{id}", funnels.DeleteOne)
+	mux.HandleFunc("/ws/funnels", funnels.FunnelWebSocketHandler)
 
 	mux.HandleFunc("GET /v1/leads", leads.GetAll)
 	mux.HandleFunc("GET /v1/leads/{id}", leads.GetOne)

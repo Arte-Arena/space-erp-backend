@@ -54,7 +54,7 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 	if funnel.Type != "" {
 		updateDoc = append(updateDoc, bson.E{Key: "type", Value: funnel.Type})
 	}
-	if len(funnel.Stages) > 0 {
+	if len(funnel.Stages) >= 0 {
 		updateDoc = append(updateDoc, bson.E{Key: "stages", Value: funnel.Stages})
 	}
 
