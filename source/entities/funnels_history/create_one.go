@@ -10,7 +10,6 @@ import (
 	"os"
 	"time"
 
-	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
@@ -25,7 +24,6 @@ func CreateOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	input.ID = bson.NewObjectID()
 	input.CreatedAt = time.Now()
 
 	mongoURI := os.Getenv(utils.MONGODB_URI)

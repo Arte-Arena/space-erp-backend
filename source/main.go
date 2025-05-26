@@ -42,8 +42,8 @@ func main() {
 
 	mux.HandleFunc("GET /v1/reports", leads.GetAll)
 
-	mux.HandleFunc("GET /v1/funnels_history", funnelshistory.GetAll)
 	mux.HandleFunc("POST /v1/funnels_history", funnelshistory.CreateOne)
+	mux.HandleFunc("GET /v1/funnels_history/{id}", funnelshistory.GetAll)
 
 	http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv(utils.PORT)), middlewares.SecurityHeaders(middlewares.Cors(mux)))
 }

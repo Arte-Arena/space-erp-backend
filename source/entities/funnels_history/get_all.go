@@ -53,7 +53,16 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_FUNNELS_HISTORY)
 
+	id := r.PathValue("id")
 	filter := bson.D{}
+	if id != "" {
+		funnelID, err := bson.ObjectIDFromHex(id)
+		if err != nil {
+			utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.INVALID_FUNNEL_ID_FORMAT)
+			return
+		}
+		filter = append(filter, bson.E{Key: "related_funnel", Value: funnelID})
+	}
 
 	totalItems, err := collection.CountDocuments(ctx, filter)
 	if err != nil {
