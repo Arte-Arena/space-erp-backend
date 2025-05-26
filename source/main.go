@@ -4,6 +4,7 @@ import (
 	"api/source/entities/budgets"
 	"api/source/entities/clients"
 	"api/source/entities/funnels"
+	funnelshistory "api/source/entities/funnels_history"
 	"api/source/entities/leads"
 	"api/source/entities/orders"
 	"api/source/middlewares"
@@ -40,6 +41,9 @@ func main() {
 	mux.HandleFunc("GET /v1/orders/{id}", orders.GetOne)
 
 	mux.HandleFunc("GET /v1/reports", leads.GetAll)
+
+	mux.HandleFunc("POST /v1/funnels_history", funnelshistory.CreateOne)
+	mux.HandleFunc("GET /v1/funnels_history/{id}", funnelshistory.GetAll)
 
 	http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv(utils.PORT)), middlewares.SecurityHeaders(middlewares.Cors(mux)))
 }
