@@ -1,8 +1,8 @@
 package report
 
 import (
-	"api/source/schemas"
-	"api/source/utils"
+	"api/schemas"
+	"api/utils"
 	"net/http"
 )
 

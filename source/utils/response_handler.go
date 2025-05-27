@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"api/source/schemas"
+	"api/schemas"
 	"encoding/json"
 	"net/http"
 )

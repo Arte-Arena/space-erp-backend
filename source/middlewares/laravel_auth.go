@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"api/source/utils"
+	"api/utils"
 	"context"
 	"encoding/json"
 	"fmt"
