@@ -1,9 +1,9 @@
 package funnels
 
 import (
-	"api/source/database"
-	"api/source/schemas"
-	"api/source/utils"
+	"api/database"
+	"api/schemas"
+	"api/utils"
 	"context"
 	"encoding/json"
 	"net/http"

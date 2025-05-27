@@ -1,7 +1,7 @@
 package budgets
 
 import (
-	"api/source/schemas"
+	"api/schemas"
 	"database/sql"
 	"fmt"
 	"os"

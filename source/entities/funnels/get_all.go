@@ -1,10 +1,10 @@
 package funnels
 
 import (
-	"api/source/database"
-	"api/source/entities/budgets"
-	"api/source/entities/orders"
-	"api/source/utils"
+	"api/database"
+	"api/entities/budgets"
+	"api/entities/orders"
+	"api/utils"
 	"context"
 	"net/http"
 	"os"
