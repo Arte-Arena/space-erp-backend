@@ -1,8 +1,8 @@
 package funnels
 
 import (
-	"api/source/database"
-	"api/source/utils"
+	"api/database"
+	"api/utils"
 	"context"
 	"net/http"
 	"os"

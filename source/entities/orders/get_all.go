@@ -1,8 +1,8 @@
 package orders
 
 import (
-	"api/source/database"
-	"api/source/utils"
+	"api/database"
+	"api/utils"
 	"context"
 	"math"
 	"net/http"

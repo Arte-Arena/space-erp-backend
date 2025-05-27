@@ -1,14 +1,14 @@
 package main
 
 import (
-	"api/source/entities/budgets"
-	"api/source/entities/clients"
-	"api/source/entities/funnels"
-	funnelshistory "api/source/entities/funnels_history"
-	"api/source/entities/leads"
-	"api/source/entities/orders"
-	"api/source/middlewares"
-	"api/source/utils"
+	"api/entities/budgets"
+	"api/entities/clients"
+	"api/entities/funnels"
+	funnelshistory "api/entities/funnels_history"
+	"api/entities/leads"
+	"api/entities/orders"
+	"api/middlewares"
+	"api/utils"
 	"fmt"
 	"net/http"
 	"os"
