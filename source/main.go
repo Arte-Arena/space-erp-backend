@@ -19,31 +19,31 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /v1/funnels", funnels.GetAll)
-	mux.HandleFunc("GET /v1/funnels/{id}", funnels.GetOne)
-	mux.HandleFunc("POST /v1/funnels", funnels.CreateOne)
-	mux.HandleFunc("PATCH /v1/funnels/{id}", funnels.UpdateOne)
-	mux.HandleFunc("DELETE /v1/funnels/{id}", funnels.DeleteOne)
-	mux.HandleFunc("/ws/funnels", funnels.FunnelWebSocketHandler)
+	mux.Handle("GET /v1/funnels", middlewares.LaravelAuth(http.HandlerFunc(funnels.GetAll)))
+	mux.Handle("GET /v1/funnels/{id}", middlewares.LaravelAuth(http.HandlerFunc(funnels.GetOne)))
+	mux.Handle("POST /v1/funnels", middlewares.LaravelAuth(http.HandlerFunc(funnels.CreateOne)))
+	mux.Handle("PATCH /v1/funnels/{id}", middlewares.LaravelAuth(http.HandlerFunc(funnels.UpdateOne)))
+	mux.Handle("DELETE /v1/funnels/{id}", middlewares.LaravelAuth(http.HandlerFunc(funnels.DeleteOne)))
+	mux.HandleFunc("/v1/ws/funnels", funnels.FunnelWebSocketHandler)
 
-	mux.HandleFunc("GET /v1/leads", leads.GetAll)
-	mux.HandleFunc("GET /v1/leads/{id}", leads.GetOne)
-	mux.HandleFunc("POST /v1/leads", leads.CreateOne)
-	mux.HandleFunc("PATCH /v1/leads/{id}", leads.UpdateOne)
+	mux.Handle("GET /v1/leads", middlewares.LaravelAuth(http.HandlerFunc(leads.GetAll)))
+	mux.Handle("GET /v1/leads/{id}", middlewares.LaravelAuth(http.HandlerFunc(leads.GetOne)))
+	mux.Handle("POST /v1/leads", middlewares.LaravelAuth(http.HandlerFunc(leads.CreateOne)))
+	mux.Handle("PATCH /v1/leads/{id}", middlewares.LaravelAuth(http.HandlerFunc(leads.UpdateOne)))
 
-	mux.HandleFunc("GET /v1/clients", clients.GetAll)
-	mux.HandleFunc("GET /v1/clients/{id}", clients.GetOne)
+	mux.Handle("GET /v1/clients", middlewares.LaravelAuth(http.HandlerFunc(clients.GetAll)))
+	mux.Handle("GET /v1/clients/{id}", middlewares.LaravelAuth(http.HandlerFunc(clients.GetOne)))
 
-	mux.HandleFunc("GET /v1/budgets", budgets.GetAll)
-	mux.HandleFunc("GET /v1/budgets/{id}", budgets.GetOne)
+	mux.Handle("GET /v1/budgets", middlewares.LaravelAuth(http.HandlerFunc(budgets.GetAll)))
+	mux.Handle("GET /v1/budgets/{id}", middlewares.LaravelAuth(http.HandlerFunc(budgets.GetOne)))
 
-	mux.HandleFunc("GET /v1/orders", orders.GetAll)
-	mux.HandleFunc("GET /v1/orders/{id}", orders.GetOne)
+	mux.Handle("GET /v1/orders", middlewares.LaravelAuth(http.HandlerFunc(orders.GetAll)))
+	mux.Handle("GET /v1/orders/{id}", middlewares.LaravelAuth(http.HandlerFunc(orders.GetOne)))
 
-	mux.HandleFunc("GET /v1/reports", leads.GetAll)
+	mux.Handle("GET /v1/reports", middlewares.LaravelAuth(http.HandlerFunc(leads.GetAll)))
 
-	mux.HandleFunc("POST /v1/funnels_history", funnelshistory.CreateOne)
-	mux.HandleFunc("GET /v1/funnels_history/{id}", funnelshistory.GetAll)
+	mux.Handle("POST /v1/funnels_history", middlewares.LaravelAuth(http.HandlerFunc(funnelshistory.CreateOne)))
+	mux.Handle("GET /v1/funnels_history/{id}", middlewares.LaravelAuth(http.HandlerFunc(funnelshistory.GetAll)))
 
 	http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv(utils.PORT)), middlewares.SecurityHeaders(middlewares.Cors(mux)))
 }
