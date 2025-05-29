@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func GetManyOld(oldIds []int) ([]*schemas.OrderOld, error) {

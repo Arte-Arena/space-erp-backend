@@ -3,12 +3,14 @@ module api
 go 1.24.1
 
 require (
+	github.com/go-sql-driver/mysql v1.9.2
 	github.com/gorilla/websocket v1.5.3
 	go.mongodb.org/mongo-driver v1.17.3
 	go.mongodb.org/mongo-driver/v2 v2.2.1
 )
 
 require (
+	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
