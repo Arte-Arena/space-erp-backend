@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"os"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 func GetAll(w http.ResponseWriter, r *http.Request) {
@@ -20,7 +20,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 
 	mongoURI := os.Getenv(utils.MONGODB_URI)
 	opts := options.Client().ApplyURI(mongoURI)
-	mongoClient, err := mongo.Connect(ctx, opts)
+	mongoClient, err := mongo.Connect(opts)
 	if err != nil {
 		utils.SendResponse(w, http.StatusBadGateway, "", nil, utils.CANNOT_CONNECT_TO_MONGODB)
 		return
