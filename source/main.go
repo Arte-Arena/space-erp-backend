@@ -46,8 +46,12 @@ func main() {
 	mux.Handle("POST /v1/funnels_history", middlewares.LaravelAuth(http.HandlerFunc(funnelshistory.CreateOne)))
 	mux.Handle("GET /v1/funnels_history/{id}", middlewares.LaravelAuth(http.HandlerFunc(funnelshistory.GetAll)))
 
-	mux.Handle("GET /v1/space-desk", middlewares.LaravelAuth(http.HandlerFunc(leads.GetAll)))
-	mux.Handle("POST /v1/space-desk", middlewares.LaravelAuth(http.HandlerFunc(leads.GetAll)))
+	mux.Handle("GET /v1/space-desk/history", middlewares.LaravelAuth(http.HandlerFunc(leads.GetAll)))
+	mux.Handle("GET /v1/space-desk/status", middlewares.LaravelAuth(http.HandlerFunc(leads.GetAll)))
+	mux.Handle("GET /v1/space-desk/errors", middlewares.LaravelAuth(http.HandlerFunc(leads.GetAll)))
+	mux.Handle("POST /v1/space-desk/webhook-whatsapp", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneWebhookWhatsapp)))
+	mux.Handle("POST /v1/space-desk/message", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneWebhookWhatsapp)))
+	mux.Handle("POST /v1/space-desk/media", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneWebhookWhatsapp)))
 	mux.HandleFunc("/v1/ws/space-desk", spacedesk.SpaceDeskWebSocketHandler)
 
 	http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv(utils.PORT)), middlewares.SecurityHeaders(middlewares.Cors(mux)))
