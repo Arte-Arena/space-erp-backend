@@ -16,7 +16,7 @@ const (
 	MYSQL_URI                    = "MYSQL_URI"
 	LARAVEL_API_URL              = "LARAVEL_API_URL"
 	SPACE_DESK_WEBHOOK_X_API_KEY = "SPACE_DESK_WEBHOOK_X_API_KEY"
-	SPACE_DESK_API_KEY           = "SPACE_DESK_API_KEY "
+	SPACE_DESK_API_KEY           = "SPACE_DESK_API_KEY"
 
 	ENV_DEVELOPMENT = "development"
 	ENV_HOMOLOG     = "homolog"
