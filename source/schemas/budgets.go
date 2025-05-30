@@ -2,7 +2,6 @@ package schemas
 
 import (
 	"database/sql"
-	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
@@ -24,8 +23,8 @@ type BudgetOld struct {
 	OpcaoEntrega       sql.NullString  `db:"opcao_entrega"`
 	PrazoOpcaoEntrega  sql.NullInt32   `db:"prazo_opcao_entrega"`
 	PrecoOpcaoEntrega  sql.NullFloat64 `db:"preco_opcao_entrega"`
-	CreatedAt          time.Time       `db:"created_at"`
-	UpdatedAt          time.Time       `db:"updated_at"`
+	CreatedAt          sql.NullString  `db:"created_at"`
+	UpdatedAt          sql.NullString  `db:"updated_at"`
 	Antecipado         sql.NullInt32   `db:"antecipado"`
 	DataAntecipa       sql.NullTime    `db:"data_antecipa"`
 	TaxaAntecipa       sql.NullFloat64 `db:"taxa_antecipa"`
@@ -37,5 +36,5 @@ type BudgetOld struct {
 	Brinde             sql.NullInt32   `db:"brinde"`
 	ProdutosBrinde     sql.NullString  `db:"produtos_brinde"`
 	PrazoProducao      int             `db:"prazo_producao"`
-	PrevEntrega        time.Time       `db:"prev_entrega"`
+	PrevEntrega        sql.NullString  `db:"prev_entrega"`
 }
