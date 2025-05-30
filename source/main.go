@@ -7,6 +7,7 @@ import (
 	funnelshistory "api/entities/funnels_history"
 	"api/entities/leads"
 	"api/entities/orders"
+	spacedesk "api/entities/space_desk"
 	"api/middlewares"
 	"api/utils"
 	"fmt"
@@ -47,7 +48,7 @@ func main() {
 
 	mux.Handle("GET /v1/space-desk", middlewares.LaravelAuth(http.HandlerFunc(leads.GetAll)))
 	mux.Handle("POST /v1/space-desk", middlewares.LaravelAuth(http.HandlerFunc(leads.GetAll)))
-	mux.HandleFunc("/v1/ws/space-desk", funnels.FunnelWebSocketHandler)
+	mux.HandleFunc("/v1/ws/space-desk", spacedesk.SpaceDeskWebSocketHandler)
 
 	http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv(utils.PORT)), middlewares.SecurityHeaders(middlewares.Cors(mux)))
 }

@@ -49,5 +49,7 @@ func createFromWebhook(w http.ResponseWriter, r *http.Request, ctx context.Conte
 		return
 	}
 
+	broadcastSpaceDeskMessage(event)
+
 	utils.SendResponse(w, http.StatusCreated, "", nil, 0)
 }
