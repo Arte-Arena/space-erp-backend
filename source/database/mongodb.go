@@ -7,14 +7,15 @@ import (
 )
 
 const (
-	MONGO_TIMEOUT              = 20 * time.Second
-	COLLECTION_LEADS           = "leads"
-	COLLECTION_FUNNELS         = "funnels"
-	COLLECTION_BUDGETS         = "budgets"
-	COLLECTION_ORDERS          = "orders"
-	COLLECTION_USERS           = "users"
-	COLLECTION_CLIENTS         = "clients"
-	COLLECTION_FUNNELS_HISTORY = "funnels_history"
+	MONGO_TIMEOUT                         = 20 * time.Second
+	COLLECTION_LEADS                      = "leads"
+	COLLECTION_FUNNELS                    = "funnels"
+	COLLECTION_BUDGETS                    = "budgets"
+	COLLECTION_ORDERS                     = "orders"
+	COLLECTION_USERS                      = "users"
+	COLLECTION_CLIENTS                    = "clients"
+	COLLECTION_FUNNELS_HISTORY            = "funnels_history"
+	COLLECTION_SPACE_DESK_EVENTS_WHATSAPP = "space_desk_events_whatsapp"
 )
 
 func GetDB() string {
