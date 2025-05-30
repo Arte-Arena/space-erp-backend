@@ -116,29 +116,30 @@ func CreateOneMedia(w http.ResponseWriter, r *http.Request) {
 		dbClient, err := mongo.Connect(clientOpts)
 		if err == nil {
 			now := time.Now().UTC()
-			raw := bson.M{
-				"entry": []any{
-					bson.M{
-						"changes": []any{
-							bson.M{
-								"field": "messages",
-								"value": bson.M{
-									"messages": []any{
-										bson.M{
-											"from":      "space-erp-backend",
-											"to":        to,
-											"timestamp": fmt.Sprint(now.Unix()),
-											mediaType:   bson.M{"id": mediaId},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+			timestampStr := fmt.Sprintf("%d", now.Unix())
+			from := "551123371548"
+			msgID := respData.Messages[0].ID
+
+			messageEvent := bson.M{
+				"from":      from,
+				"to":        to,
+				"id":        msgID,
+				"timestamp": timestampStr,
+				"type":      mediaType,
 			}
+			switch mediaType {
+			case "image":
+				messageEvent["image"] = bson.M{"id": mediaId}
+			case "document":
+				messageEvent["document"] = bson.M{"id": mediaId}
+			case "video":
+				messageEvent["video"] = bson.M{"id": mediaId}
+			case "audio":
+				messageEvent["audio"] = bson.M{"id": mediaId}
+			}
+
 			col := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_EVENTS_WHATSAPP)
-			_, _ = col.InsertOne(ctx, raw)
+			_, _ = col.InsertOne(ctx, messageEvent)
 			_ = dbClient.Disconnect(ctx)
 		}
 	}()
