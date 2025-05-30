@@ -27,10 +27,10 @@ type OrderOld struct {
 	Situacao           sql.NullString `db:"situacao"`
 	Prioridade         sql.NullString `db:"prioridade"`
 	OrcamentoID        sql.NullInt64  `db:"orcamento_id"`
-	CreatedAt          sql.NullTime   `db:"created_at"`
-	UpdatedAt          sql.NullTime   `db:"updated_at"`
+	CreatedAt          sql.NullString `db:"created_at"`
+	UpdatedAt          sql.NullString `db:"updated_at"`
 	TinyPedidoID       sql.NullString `db:"tiny_pedido_id"`
-	DataPrevista       sql.NullTime   `db:"data_prevista"`
+	DataPrevista       sql.NullString `db:"data_prevista"`
 	VendedorID         sql.NullInt64  `db:"vendedor_id"`
 	DesignerID         sql.NullInt64  `db:"designer_id"`
 	CodigoRastreamento sql.NullString `db:"codigo_rastreamento"`
