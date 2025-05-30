@@ -71,7 +71,7 @@ func CreateOneMedia(w http.ResponseWriter, r *http.Request) {
 		bytes.NewReader(bodyBytes),
 	)
 	req360.Header.Set("Content-Type", "application/json")
-	req360.Header.Set("D360-API-KEY", os.Getenv(utils.D360_API_KEY))
+	req360.Header.Set("D360-API-KEY", os.Getenv(utils.SPACE_DESK_API_KEY))
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp360, err := client.Do(req360)
@@ -192,7 +192,7 @@ func uploadTo360(fileBytes []byte, header *multipart.FileHeader) (string, error)
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("D360-API-KEY", os.Getenv(utils.D360_API_KEY))
+	req.Header.Set("D360-API-KEY", os.Getenv(utils.SPACE_DESK_API_KEY))
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	client := &http.Client{Timeout: 15 * time.Second}
@@ -224,7 +224,7 @@ func fetchMediaURL(mediaId string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("D360-API-KEY", os.Getenv(utils.D360_API_KEY))
+	req.Header.Set("D360-API-KEY", os.Getenv(utils.SPACE_DESK_API_KEY))
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
