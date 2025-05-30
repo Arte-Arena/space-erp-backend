@@ -52,7 +52,7 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiKey := os.Getenv(utils.D360_API_KEY)
+	apiKey := os.Getenv(utils.SPACE_DESK_API_KEY)
 	if apiKey == "" {
 		utils.SendResponse(w, http.StatusInternalServerError, "API key não configurada", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
 		return
