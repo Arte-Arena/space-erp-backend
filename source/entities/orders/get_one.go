@@ -48,14 +48,5 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if oldID, hasOldID := result["old_id"]; hasOldID {
-		if oldIDInt, canConvert := oldID.(int64); canConvert {
-			oldOrder, err := GetOneOld(int(oldIDInt))
-			if err == nil && oldOrder != nil {
-				result["old_data"] = oldOrder
-			}
-		}
-	}
-
 	utils.SendResponse(w, http.StatusOK, "", result, 0)
 }

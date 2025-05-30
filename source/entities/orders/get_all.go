@@ -2,6 +2,7 @@ package orders
 
 import (
 	"api/database"
+	"api/schemas"
 	"api/utils"
 	"context"
 	"math"
@@ -74,22 +75,10 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	}
 	defer cursor.Close(ctx)
 
-	var orders []bson.M
+	orders := []schemas.Order{}
 	if err := cursor.All(ctx, &orders); err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_ORDERS_IN_MONGODB)
 		return
-	}
-
-	// Fetch old data for each order
-	for i, order := range orders {
-		if oldID, hasOldID := order["old_id"]; hasOldID {
-			if oldIDInt, canConvert := oldID.(int64); canConvert {
-				oldOrder, err := GetOneOld(int(oldIDInt))
-				if err == nil && oldOrder != nil {
-					orders[i]["old_data"] = oldOrder
-				}
-			}
-		}
 	}
 
 	response := map[string]any{
