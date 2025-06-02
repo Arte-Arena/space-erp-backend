@@ -1,6 +1,10 @@
 package schemas
 
-import "go.mongodb.org/mongo-driver/v2/bson"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
+)
 
 type SpaceDesk struct {
 }
@@ -52,4 +56,18 @@ type SpaceDeskMessage struct {
 
 type SpaceDeskMessageText struct {
 	Body string `json:"body" bson:"body"`
+}
+
+type SpaceDeskChatMetadata struct {
+	ID                bson.ObjectID `json:"_id" bson:"_id,omitempty"`
+	Name              string        `json:"name" bson:"name"`
+	NickName          string        `json:"nick_name" bson:"nick_name"`
+	ClientPhoneNumber string        `json:"cliente_phone_number" bson:"cliente_phone_number"`
+	Description       string        `json:"description" bson:"description"`
+	Status            string        `json:"status" bson:"status"`
+	Type              string        `json:"type" bson:"type"`
+	GroupId           string        `json:"group_id" bson:"group_id"`
+	CreatedAt         time.Time     `json:"created_at" bson:"created_at"`
+	UpdatedAt         time.Time     `json:"updated_at" bson:"updated_at"`
+	LastMessage       time.Time     `json:"last_message_timestamp" bson:"last_message_timestamp"`
 }
