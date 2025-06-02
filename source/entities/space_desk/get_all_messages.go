@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"api/schemas"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -46,59 +48,37 @@ func GetAllMessages(w http.ResponseWriter, r *http.Request) {
 	}
 	defer cursor.Close(ctx)
 
-	allMessages := []bson.M{}
+	allEvents := []schemas.SpaceDeskMessageEvent{}
 	for cursor.Next(ctx) {
-		doc := bson.M{}
-		if err := cursor.Decode(&doc); err != nil {
+		var event schemas.SpaceDeskMessageEvent
+		if err := cursor.Decode(&event); err != nil {
 			continue
 		}
-
-		entries, ok := doc["entry"].([]any)
-		if !ok {
-			continue
-		}
-		for _, entryRaw := range entries {
-			entry, ok := entryRaw.(map[string]any)
-			if !ok {
-				continue
-			}
-			changes, ok := entry["changes"].([]any)
-			if !ok {
-				continue
-			}
-			for _, changeRaw := range changes {
-				change, ok := changeRaw.(map[string]any)
-				if !ok {
-					continue
-				}
-				value, ok := change["value"].(map[string]any)
-				if !ok {
-					continue
-				}
-				msgs, ok := value["messages"].([]any)
-				if !ok {
-					continue
-				}
-				for _, msgRaw := range msgs {
-					msg, ok := msgRaw.(map[string]any)
-					if !ok {
-						continue
-					}
-					tsStr, ok := msg["timestamp"].(string)
-					if !ok {
-						continue
-					}
-					tsInt, err := strconv.ParseInt(tsStr, 10, 64)
+		found := false
+		for _, entry := range event.Entry {
+			for _, change := range entry.Changes {
+				for _, msg := range change.Value.Messages {
+					tsInt, err := strconv.ParseInt(msg.Timestamp, 10, 64)
 					if err != nil {
 						continue
 					}
 					if minTimestamp == 0 || tsInt >= minTimestamp {
-						allMessages = append(allMessages, msg)
+						found = true
+						break
 					}
 				}
+				if found {
+					break
+				}
 			}
+			if found {
+				break
+			}
+		}
+		if found {
+			allEvents = append(allEvents, event)
 		}
 	}
 
-	utils.SendResponse(w, http.StatusOK, "", allMessages, 0)
+	utils.SendResponse(w, http.StatusOK, "", allEvents, 0)
 }
