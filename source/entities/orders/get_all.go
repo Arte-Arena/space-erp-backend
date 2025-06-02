@@ -107,6 +107,14 @@ func buildFilterFromQueryParams(r *http.Request) bson.D {
 		}
 	}
 
+	if tinyID := queryParams.Get("tiny_id"); tinyID != "" {
+		filter = append(filter, bson.E{Key: "tiny.id", Value: tinyID})
+	}
+
+	if tinyNumber := queryParams.Get("tiny_number"); tinyNumber != "" {
+		filter = append(filter, bson.E{Key: "tiny.number", Value: bson.D{{Key: "$regex", Value: tinyNumber}, {Key: "$options", Value: "i"}}})
+	}
+
 	objectIDFields := map[string]string{
 		"created_by":       "created_by",
 		"related_seller":   "related_seller",
