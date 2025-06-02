@@ -7,7 +7,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
@@ -36,6 +39,109 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 	_, err = collection.InsertOne(ctx, event)
 	if err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+
+	collection2 := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT_METADATA)
+
+	entryArr, ok := event["entry"].([]interface{})
+	if !ok || len(entryArr) == 0 {
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+	entry, ok := entryArr[0].(map[string]interface{})
+	if !ok {
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+	changesArr, ok := entry["changes"].([]interface{})
+	if !ok || len(changesArr) == 0 {
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+	changes, ok := changesArr[0].(map[string]interface{})
+	if !ok {
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+	value, ok := changes["value"].(map[string]interface{})
+	if !ok {
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+	contactsArr, ok := value["contacts"].([]interface{})
+	if !ok || len(contactsArr) == 0 {
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+	contacts, ok := contactsArr[0].(map[string]interface{})
+	if !ok {
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+	messagesArr, ok := value["messages"].([]interface{})
+	if !ok || len(messagesArr) == 0 {
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+	messages, ok := messagesArr[0].(map[string]interface{})
+	if !ok {
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+
+	clientPhoneNumber, ok := contacts["wa_id"].(string)
+	if !ok {
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+	profile, ok := contacts["profile"].(map[string]interface{})
+	if !ok {
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+	name, ok := profile["name"].(string)
+	if !ok {
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+	timestampStr, ok := messages["timestamp"].(string)
+	if !ok {
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+	lastMessageTimestampInt, err := strconv.ParseInt(timestampStr, 10, 64)
+	if err != nil {
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+
+	lastMessageTimestamp := time.Unix(lastMessageTimestampInt, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+	updatedAt := time.Now()
+
+	filter := bson.M{"cliente_phone_number": clientPhoneNumber}
+	update := bson.M{
+		"$set": bson.M{
+			"name":                   name,
+			"updated_at":             updatedAt,
+			"last_message_timestamp": lastMessageTimestamp,
+		},
+		"$setOnInsert": bson.M{
+			"nick_name":            "",
+			"cliente_phone_number": clientPhoneNumber,
+			"description":          "",
+			"status":               "active",
+			"type":                 "",
+			"group_id":             "",
+			"created_at":           updatedAt,
+		},
+	}
+
+	updateOpts := options.UpdateOne().SetUpsert(true)
+	_, err = collection2.UpdateOne(ctx, filter, update, updateOpts)
+
+	if err != nil {
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_INSERT_SPACE_DESK_CHAT_METADATA_TO_MONGODB)
 		return
 	}
 
