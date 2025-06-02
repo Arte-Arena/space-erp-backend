@@ -46,12 +46,24 @@ type SpaceDeskMessageProfile struct {
 	Name string `json:"name" bson:"name"`
 }
 
+type SpaceDeskMedia struct {
+	ID       string `json:"id,omitempty" bson:"id,omitempty"`
+	MimeType string `json:"mime_type,omitempty" bson:"mime_type,omitempty"`
+	Sha256   string `json:"sha256,omitempty" bson:"sha256,omitempty"`
+	File     string `json:"filename,omitempty" bson:"filename,omitempty"`
+	// Outros campos conforme necessário
+}
+
 type SpaceDeskMessage struct {
 	Type      string                `json:"type" bson:"type"`
 	From      string                `json:"from" bson:"from"`
 	ID        string                `json:"id" bson:"id"`
 	Timestamp string                `json:"timestamp" bson:"timestamp"`
 	Text      *SpaceDeskMessageText `json:"text,omitempty" bson:"text,omitempty"`
+	Video     *SpaceDeskMedia       `json:"video,omitempty" bson:"video,omitempty"`
+	Image     *SpaceDeskMedia       `json:"image,omitempty" bson:"image,omitempty"`
+	Audio     *SpaceDeskMedia       `json:"audio,omitempty" bson:"audio,omitempty"`
+	Document  *SpaceDeskMedia       `json:"document,omitempty" bson:"document,omitempty"`
 }
 
 type SpaceDeskMessageText struct {
