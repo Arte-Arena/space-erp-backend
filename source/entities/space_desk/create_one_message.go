@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -29,10 +30,12 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 
 	var reqBody CreateMessageRequest
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		log.Println("Erro ao decodificar JSON do corpo da requisição:", err)
 		utils.SendResponse(w, http.StatusBadRequest, "JSON inválido: "+err.Error(), nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
 		return
 	}
 	if reqBody.To == "" || reqBody.Body == "" {
+		log.Println("Campos obrigatórios 'to' ou 'body' ausentes no corpo da requisição")
 		utils.SendResponse(w, http.StatusBadRequest, "Campos 'to' e 'body' são obrigatórios", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
 		return
 	}
@@ -48,12 +51,14 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	bodyBytes, err := json.Marshal(payload)
 	if err != nil {
+		log.Println("Erro ao serializar payload:", err)
 		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao serializar payload: "+err.Error(), nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
 		return
 	}
 
 	apiKey := os.Getenv(utils.SPACE_DESK_API_KEY)
 	if apiKey == "" {
+		log.Println("API key não configurada (variável de ambiente não encontrada)")
 		utils.SendResponse(w, http.StatusInternalServerError, "API key não configurada", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
 		return
 	}
@@ -66,6 +71,7 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 		bytes.NewReader(bodyBytes),
 	)
 	if err != nil {
+		log.Println("Erro ao criar requisição externa:", err)
 		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao criar requisição externa: "+err.Error(), nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
 		return
 	}
@@ -76,6 +82,7 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	client := &http.Client{}
 	resp, err := client.Do(req360)
 	if err != nil {
+		log.Println("Falha ao enviar mensagem:", err)
 		utils.SendResponse(w, http.StatusBadGateway, "Falha ao enviar mensagem", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
 		return
 	}
@@ -83,47 +90,50 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 
 	respMap := make(map[string]any)
 	if err := json.NewDecoder(resp.Body).Decode(&respMap); err != nil {
+		log.Println("Erro ao ler resposta externa:", err)
 		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao ler resposta externa", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
 		return
 	}
 
-	go func(reqBody CreateMessageRequest) {
-		ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
-		defer cancel()
+	mongoURI := os.Getenv(utils.MONGODB_URI)
+	clientOpts := options.Client().ApplyURI(mongoURI)
+	dbClient, err := mongo.Connect(clientOpts)
+	if err != nil {
+		log.Println("Erro ao conectar ao MongoDB:", err)
+		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao conectar ao MongoDB: "+err.Error(), nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
+		return
+	}
+	defer dbClient.Disconnect(ctx)
 
-		mongoURI := os.Getenv(utils.MONGODB_URI)
-		clientOpts := options.Client().ApplyURI(mongoURI)
-		dbClient, err := mongo.Connect(clientOpts)
-		if err != nil {
-			return
-		}
-		defer dbClient.Disconnect(ctx)
-
-		now := time.Now().UTC()
-		raw := bson.M{
-			"entry": []any{
-				bson.M{
-					"changes": []any{
-						bson.M{
-							"field": "messages",
-							"value": bson.M{
-								"messages": []any{
-									bson.M{
-										"from":      "space-erp-backend",
-										"to":        reqBody.To,
-										"timestamp": fmt.Sprint(now.Unix()),
-										"text":      bson.M{"body": reqBody.Body},
-									},
+	now := time.Now().UTC()
+	raw := bson.M{
+		"entry": []any{
+			bson.M{
+				"changes": []any{
+					bson.M{
+						"field": "messages",
+						"value": bson.M{
+							"messages": []any{
+								bson.M{
+									"from":      "space-erp-backend",
+									"to":        reqBody.To,
+									"timestamp": fmt.Sprint(now.Unix()),
+									"text":      bson.M{"body": reqBody.Body},
 								},
 							},
 						},
 					},
 				},
 			},
-		}
-		col := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_EVENTS_WHATSAPP)
-		_, _ = col.InsertOne(ctx, raw)
-	}(reqBody)
+		},
+	}
+	col := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_EVENTS_WHATSAPP)
+	_, err = col.InsertOne(ctx, raw)
+	if err != nil {
+		log.Println("Erro ao inserir evento no MongoDB:", err)
+		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao inserir evento no MongoDB: "+err.Error(), nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
+		return
+	}
 
 	broadcastSpaceDeskMessage(respMap)
 
