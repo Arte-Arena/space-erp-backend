@@ -118,6 +118,14 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 
 	lastMessageTimestamp := time.Unix(lastMessageTimestampInt, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
 	updatedAt := time.Now()
+	var lastMessage string
+	if msgType, ok := messages["type"].(string); ok && msgType == "text" {
+		if textObj, ok := messages["text"].(map[string]interface{}); ok {
+			if body, ok := textObj["body"].(string); ok {
+				lastMessage = body
+			}
+		}
+	}
 
 	filter := bson.M{"cliente_phone_number": clientPhoneNumber}
 	update := bson.M{
@@ -125,6 +133,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 			"name":                   name,
 			"updated_at":             updatedAt,
 			"last_message_timestamp": lastMessageTimestamp,
+			"last_message":           lastMessage,
 		},
 		"$setOnInsert": bson.M{
 			"nick_name":            "",
