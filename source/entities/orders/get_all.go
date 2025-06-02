@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -53,7 +55,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_ORDERS)
 
-	filter := bson.D{}
+	filter := buildFilterFromQueryParams(r)
 
 	totalItems, err := collection.CountDocuments(ctx, filter)
 	if err != nil {
@@ -92,4 +94,74 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.SendResponse(w, http.StatusOK, "", response, 0)
+}
+
+func buildFilterFromQueryParams(r *http.Request) bson.D {
+	filter := bson.D{}
+
+	queryParams := r.URL.Query()
+
+	if oldID := queryParams.Get("old_id"); oldID != "" {
+		if parsedOldID, err := strconv.ParseUint(oldID, 10, 64); err == nil {
+			filter = append(filter, bson.E{Key: "old_id", Value: parsedOldID})
+		}
+	}
+
+	objectIDFields := map[string]string{
+		"created_by":       "created_by",
+		"related_seller":   "related_seller",
+		"related_designer": "related_designer",
+		"related_budget":   "related_budget",
+	}
+	for param, field := range objectIDFields {
+		if value := queryParams.Get(param); value != "" {
+			if objectID, err := bson.ObjectIDFromHex(value); err == nil {
+				filter = append(filter, bson.E{Key: field, Value: objectID})
+			}
+		}
+	}
+
+	stringFields := []string{"tracking_code", "url_trello", "products_list_legacy", "notes"}
+	for _, field := range stringFields {
+		if value := queryParams.Get(field); value != "" {
+			if queryParams.Get(field+"_exact") == "true" {
+				filter = append(filter, bson.E{Key: field, Value: value})
+			} else {
+				filter = append(filter, bson.E{Key: field, Value: bson.D{{Key: "$regex", Value: value}, {Key: "$options", Value: "i"}}})
+			}
+		}
+	}
+
+	enumFields := []string{"status", "stage", "type"}
+	for _, field := range enumFields {
+		if value := queryParams.Get(field); value != "" {
+			filter = append(filter, bson.E{Key: field, Value: value})
+		}
+		if values := queryParams.Get(field + "_in"); values != "" {
+			valuesList := strings.Split(values, ",")
+			if len(valuesList) > 1 {
+				orConditions := bson.A{}
+				for _, val := range valuesList {
+					orConditions = append(orConditions, bson.D{{Key: field, Value: strings.TrimSpace(val)}})
+				}
+				filter = append(filter, bson.E{Key: "$or", Value: orConditions})
+			}
+		}
+	}
+
+	dateFields := []string{"created_at", "updated_at", "expected_date"}
+	for _, field := range dateFields {
+		if startDate := queryParams.Get(field + "_start"); startDate != "" {
+			if parsedDate, err := time.Parse(time.RFC3339, startDate); err == nil {
+				filter = append(filter, bson.E{Key: field, Value: bson.D{{Key: "$gte", Value: parsedDate}}})
+			}
+		}
+		if endDate := queryParams.Get(field + "_end"); endDate != "" {
+			if parsedDate, err := time.Parse(time.RFC3339, endDate); err == nil {
+				filter = append(filter, bson.E{Key: field, Value: bson.D{{Key: "$lte", Value: parsedDate}}})
+			}
+		}
+	}
+
+	return filter
 }

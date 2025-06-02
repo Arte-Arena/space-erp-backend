@@ -2,6 +2,7 @@ package orders
 
 import (
 	"api/database"
+	"api/schemas"
 	"api/utils"
 	"context"
 	"net/http"
@@ -37,8 +38,8 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 
 	filter := bson.D{{Key: "_id", Value: id}}
 
-	var result bson.M
-	err = collection.FindOne(ctx, filter).Decode(&result)
+	order := schemas.Order{}
+	err = collection.FindOne(ctx, filter).Decode(&order)
 	if err == mongo.ErrNoDocuments {
 		utils.SendResponse(w, http.StatusNotFound, "Pedido não encontrado", nil, 0)
 		return
@@ -48,5 +49,5 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SendResponse(w, http.StatusOK, "", result, 0)
+	utils.SendResponse(w, http.StatusOK, "", order, 0)
 }
