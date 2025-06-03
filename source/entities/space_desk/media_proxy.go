@@ -141,5 +141,5 @@ func HandlerMediaBase64(w http.ResponseWriter, r *http.Request) {
 
 	// 4) devolve JSON
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"base64": dataURI})
+	json.NewEncoder(w).Encode(map[string]string{"base64": dataURI, "mimeType": meta.MimeType})
 }
