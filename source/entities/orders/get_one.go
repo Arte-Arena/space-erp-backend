@@ -61,18 +61,28 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 			{Key: "as", Value: "related_designer_data"},
 		}}},
 
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_BUDGETS},
+			{Key: "localField", Value: "related_budget"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "related_budget_data"},
+		}}},
+
 		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$created_by_data"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
 		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$related_seller_data"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
 		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$related_designer_data"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
+		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$related_budget_data"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
 		{{Key: "$addFields", Value: bson.D{
 			{Key: "created_by", Value: "$created_by_data"},
 			{Key: "related_seller", Value: "$related_seller_data"},
 			{Key: "related_designer", Value: "$related_designer_data"},
+			{Key: "related_budget", Value: "$related_budget_data"},
 		}}},
 		{{Key: "$project", Value: bson.D{
 			{Key: "created_by_data", Value: 0},
 			{Key: "related_seller_data", Value: 0},
 			{Key: "related_designer_data", Value: 0},
+			{Key: "related_budget_data", Value: 0},
 		}}},
 	}
 
