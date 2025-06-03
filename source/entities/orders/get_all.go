@@ -2,7 +2,6 @@ package orders
 
 import (
 	"api/database"
-	"api/schemas"
 	"api/utils"
 	"context"
 	"math"
@@ -65,19 +64,66 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 
 	totalPages := int64(math.Ceil(float64(totalItems) / float64(pageSize)))
 
-	findOptions := options.Find().
-		SetSkip(skip).
-		SetLimit(pageSize).
-		SetSort(bson.D{{Key: "created_at", Value: -1}})
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: filter}},
+		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
+		{{Key: "$skip", Value: skip}},
+		{{Key: "$limit", Value: pageSize}},
 
-	cursor, err := collection.Find(ctx, filter, findOptions)
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_USERS},
+			{Key: "localField", Value: "created_by"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "created_by_data"},
+		}}},
+
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_USERS},
+			{Key: "localField", Value: "related_seller"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "related_seller_data"},
+		}}},
+
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_USERS},
+			{Key: "localField", Value: "related_designer"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "related_designer_data"},
+		}}},
+
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_BUDGETS},
+			{Key: "localField", Value: "related_budget"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "related_budget_data"},
+		}}},
+
+		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$created_by_data"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
+		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$related_seller_data"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
+		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$related_designer_data"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
+		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$related_budget_data"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
+		{{Key: "$addFields", Value: bson.D{
+			{Key: "created_by", Value: "$created_by_data"},
+			{Key: "related_seller", Value: "$related_seller_data"},
+			{Key: "related_designer", Value: "$related_designer_data"},
+			{Key: "related_budget", Value: "$related_budget_data"},
+		}}},
+		{{Key: "$project", Value: bson.D{
+			{Key: "created_by_data", Value: 0},
+			{Key: "related_seller_data", Value: 0},
+			{Key: "related_designer_data", Value: 0},
+			{Key: "related_budget_data", Value: 0},
+		}}},
+	}
+
+	cursor, err := collection.Aggregate(ctx, pipeline)
 	if err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_ORDERS_IN_MONGODB)
 		return
 	}
 	defer cursor.Close(ctx)
 
-	orders := []schemas.Order{}
+	orders := []bson.M{}
 	if err := cursor.All(ctx, &orders); err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_ORDERS_IN_MONGODB)
 		return

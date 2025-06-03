@@ -13,10 +13,18 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 )
 
 func main() {
 	utils.LoadEnvVariables()
+
+	env := os.Getenv(utils.ENV)
+	if env == utils.ENV_RELEASE {
+		fmt.Printf("\033[1;31;47m[ATENÇÃO] Rodando em ambiente de PRODUÇÃO!\033[0m\n")
+	} else {
+		fmt.Printf("[INFO] Ambiente atual: %s\n", env)
+	}
 
 	mux := http.NewServeMux()
 
@@ -51,10 +59,10 @@ func main() {
 	mux.Handle("GET /v1/space-desk/status", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllStatuses)))
 	
 	mux.Handle("POST /v1/space-desk/webhook-whatsapp", http.HandlerFunc(spacedesk.CreateOneWebhookWhatsapp))
-	
+
 	mux.Handle("POST /v1/space-desk/message", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneMessage)))
 	mux.Handle("POST /v1/space-desk/media", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneMedia)))
-	
+
 	mux.Handle("GET /v1/space-desk/media-base64", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.HandlerMediaBase64)))
 	mux.Handle("GET /v1/space-desk/media-download", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.HandlerMediaDownload)))
 	
@@ -67,5 +75,6 @@ func main() {
 	
 	mux.HandleFunc("/v1/ws/space-desk", spacedesk.SpaceDeskWebSocketHandler)
 
+	fmt.Printf("Servidor iniciado na porta %s às %s\n", os.Getenv(utils.PORT), time.Now().Format("2006-01-02 15:04:05"))
 	http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv(utils.PORT)), middlewares.SecurityHeaders(middlewares.Cors(mux)))
 }
