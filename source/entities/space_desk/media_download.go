@@ -68,7 +68,7 @@ func HandlerMediaDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiKey := os.Getenv("D360_API_KEY")
+	apiKey := os.Getenv("SPACE_DESK_API_KEY")
 	client := &http.Client{Timeout: 15 * time.Second}
 
 	// 1. Busca metadata da mídia

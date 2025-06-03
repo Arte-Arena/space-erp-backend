@@ -61,7 +61,7 @@ func HandlerMediaBase64(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiKey := os.Getenv("D360_API_KEY")
+	apiKey := os.Getenv("SPACE_DESK_API_KEY")
 	client := &http.Client{Timeout: 15 * time.Second}
 
 	// 1) GET metadata no endpoint correto (sem /v1/media/)
@@ -141,5 +141,5 @@ func HandlerMediaBase64(w http.ResponseWriter, r *http.Request) {
 
 	// 4) devolve JSON
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"base64": dataURI})
+	json.NewEncoder(w).Encode(map[string]string{"base64": dataURI, "mimeType": meta.MimeType})
 }
