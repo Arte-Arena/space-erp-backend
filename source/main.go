@@ -19,6 +19,13 @@ import (
 func main() {
 	utils.LoadEnvVariables()
 
+	env := os.Getenv(utils.ENV)
+	if env == utils.ENV_RELEASE {
+		fmt.Printf("\033[1;31;47m[ATENÇÃO] Rodando em ambiente de PRODUÇÃO!\033[0m\n")
+	} else {
+		fmt.Printf("[INFO] Ambiente atual: %s\n", env)
+	}
+
 	mux := http.NewServeMux()
 
 	mux.Handle("GET /v1/funnels", middlewares.LaravelAuth(http.HandlerFunc(funnels.GetAll)))
