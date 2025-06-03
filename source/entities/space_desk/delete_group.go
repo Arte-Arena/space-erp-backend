@@ -38,12 +38,26 @@ func DeleteGroup(w http.ResponseWriter, r *http.Request) {
 	defer client.Disconnect(ctx)
 
 	collection := client.Database(database.GetDB()).Collection("groups")
+	chatCol := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT_METADATA)
 
+	// Remove the group
 	_, err = collection.DeleteOne(ctx, bson.M{"_id": objID})
 	if err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_DELETE_SPACE_DESK_GROUP_TO_MONGODB)
 		return
 	}
 
-	utils.SendResponse(w, http.StatusOK, "Group deleted", nil, 0)
+	// Remove the group from all chats
+	_, err = chatCol.UpdateMany(
+		ctx,
+		bson.M{"group_ids": objID},
+		bson.M{"$pull": bson.M{"group_ids": objID}},
+	)
+	if err != nil {
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_DELETE_CHAT_FROM_SPACE_DESK_GROUP)
+		return
+	}
+
+
+	utils.SendResponse(w, http.StatusOK, "Group deleted and removed from all chats", nil, 0)
 }
