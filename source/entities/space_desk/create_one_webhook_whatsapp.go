@@ -141,7 +141,6 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 			"description":          "",
 			"status":               "active",
 			"type":                 "",
-			"group_id":             "",
 			"created_at":           updatedAt,
 		},
 	}

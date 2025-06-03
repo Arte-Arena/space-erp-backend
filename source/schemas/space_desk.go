@@ -71,15 +71,23 @@ type SpaceDeskMessageText struct {
 }
 
 type SpaceDeskChatMetadata struct {
-	ID                bson.ObjectID `json:"_id" bson:"_id,omitempty"`
-	Name              string        `json:"name" bson:"name"`
-	NickName          string        `json:"nick_name" bson:"nick_name"`
-	ClientPhoneNumber string        `json:"cliente_phone_number" bson:"cliente_phone_number"`
-	Description       string        `json:"description" bson:"description"`
-	Status            string        `json:"status" bson:"status"`
-	Type              string        `json:"type" bson:"type"`
-	GroupId           string        `json:"group_id" bson:"group_id"`
-	CreatedAt         time.Time     `json:"created_at" bson:"created_at"`
-	UpdatedAt         time.Time     `json:"updated_at" bson:"updated_at"`
-	LastMessage       time.Time     `json:"last_message_timestamp" bson:"last_message_timestamp"`
+	ID                bson.ObjectID   `json:"_id" bson:"_id,omitempty"`
+	Name              string          `json:"name" bson:"name"`
+	NickName          string          `json:"nick_name" bson:"nick_name"`
+	ClientPhoneNumber string          `json:"cliente_phone_number" bson:"cliente_phone_number"`
+	Description       string          `json:"description" bson:"description"`
+	Status            string          `json:"status" bson:"status"`
+	Type              string          `json:"type" bson:"type"`
+	GroupIds          []bson.ObjectID `json:"group_ids" bson:"group_ids"`
+	CreatedAt         time.Time       `json:"created_at" bson:"created_at"`
+	UpdatedAt         time.Time       `json:"updated_at" bson:"updated_at"`
+	LastMessage       time.Time       `json:"last_message_timestamp" bson:"last_message_timestamp"`
+}
+
+type Group struct {
+	ID     bson.ObjectID `bson:"_id,omitempty" json:"id"`
+	Name   string        `bson:"name" json:"name"`
+	Status string        `bson:"status" json:"status"`
+	Type   string        `bson:"type" json:"type"`
+	Chats  []string      `bson:"chats" json:"chats"` // IDs dos chats como string (wa_id, por exemplo)
 }
