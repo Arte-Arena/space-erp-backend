@@ -2,7 +2,6 @@ package orders
 
 import (
 	"api/database"
-	"api/schemas"
 	"api/utils"
 	"context"
 	"net/http"
@@ -38,16 +37,64 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 
 	filter := bson.D{{Key: "_id", Value: id}}
 
-	order := schemas.Order{}
-	err = collection.FindOne(ctx, filter).Decode(&order)
-	if err == mongo.ErrNoDocuments {
-		utils.SendResponse(w, http.StatusNotFound, "Pedido não encontrado", nil, 0)
-		return
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: filter}},
+
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_USERS},
+			{Key: "localField", Value: "created_by"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "created_by_data"},
+		}}},
+
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_USERS},
+			{Key: "localField", Value: "related_seller"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "related_seller_data"},
+		}}},
+
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: database.COLLECTION_USERS},
+			{Key: "localField", Value: "related_designer"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "related_designer_data"},
+		}}},
+
+		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$created_by_data"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
+		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$related_seller_data"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
+		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$related_designer_data"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
+		{{Key: "$addFields", Value: bson.D{
+			{Key: "created_by", Value: "$created_by_data"},
+			{Key: "related_seller", Value: "$related_seller_data"},
+			{Key: "related_designer", Value: "$related_designer_data"},
+		}}},
+		{{Key: "$project", Value: bson.D{
+			{Key: "created_by_data", Value: 0},
+			{Key: "related_seller_data", Value: 0},
+			{Key: "related_designer_data", Value: 0},
+		}}},
 	}
+
+	cursor, err := collection.Aggregate(ctx, pipeline)
 	if err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_ORDER_BY_ID_IN_MONGODB)
 		return
 	}
+	defer cursor.Close(ctx)
 
-	utils.SendResponse(w, http.StatusOK, "", order, 0)
+	var results []bson.M
+	if err = cursor.All(ctx, &results); err != nil {
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_ORDER_BY_ID_IN_MONGODB)
+		return
+	}
+
+	if len(results) == 0 {
+		utils.SendResponse(w, http.StatusNotFound, "Pedido não encontrado", nil, 0)
+		return
+	}
+
+	result := results[0]
+
+	utils.SendResponse(w, http.StatusOK, "", result, 0)
 }
