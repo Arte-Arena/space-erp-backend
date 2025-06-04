@@ -31,7 +31,11 @@ func CreateOneMedia(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Erro no parse do form: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	to := r.FormValue("to")
+	chatId := r.FormValue("to")
+	if chatId == "" {
+		http.Error(w, "Parâmetro 'chatId' ausente", http.StatusBadRequest)
+		return
+	}
 	mediaType := r.FormValue("type")
 	file, header, err := r.FormFile("file")
 	if err != nil {
@@ -52,6 +56,37 @@ func CreateOneMedia(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Falha no upload de mídia: "+err.Error(), http.StatusBadGateway)
 		return
 	}
+	// pega o numero do telefone com base no id do chat
+	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
+	defer cancel()
+
+	mongoURI := os.Getenv(utils.MONGODB_URI)
+	clientOpts := options.Client().ApplyURI(mongoURI)
+	dbClient, err := mongo.Connect(clientOpts)
+	if err != nil {
+		http.Error(w, "Erro ao conectar ao MongoDB: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer dbClient.Disconnect(ctx)
+
+	colChats := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT_METADATA)
+	var chatDoc struct {
+		ClientePhoneNumber string `bson:"cliente_phone_number"`
+	}
+
+	objID, err := bson.ObjectIDFromHex(chatId)
+	if err != nil {
+		http.Error(w, "ID de chat inválido", http.StatusBadRequest)
+		return
+	}
+
+	err = colChats.FindOne(ctx, bson.M{"_id": objID}).Decode(&chatDoc)
+	if err != nil {
+		http.Error(w, "Chat não encontrado", http.StatusNotFound)
+		return
+	}
+
+	to := chatDoc.ClientePhoneNumber
 
 	payload := map[string]any{
 		"messaging_product": "whatsapp",
@@ -97,8 +132,10 @@ func CreateOneMedia(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(respData.Messages) == 0 || respData.Messages[0].ID == "" {
-		log.Printf("[SendMedia] Nenhuma mensagem retornada pela API 360dialog. Resp: %s", string(bodyRaw))
-		http.Error(w, "Falha ao enviar mídia: resposta vazia do 360dialog", http.StatusBadGateway)
+		log.Printf("[SendMedia] Nenhuma mensagem retornada pela API 360dialog.\n"+
+			"Payload enviado: %s\n"+
+			"Resp: %s", string(bodyBytes), string(bodyRaw))
+		http.Error(w, "Falha ao enviar mídia: resposta vazia do 360dialog", http.StatusBadGateway) //deu erro aqui
 		return
 	}
 
@@ -136,11 +173,30 @@ func CreateOneMedia(w http.ResponseWriter, r *http.Request) {
 				messageEvent["video"] = bson.M{"id": mediaId}
 			case "audio":
 				messageEvent["audio"] = bson.M{"id": mediaId}
+			case "sticker":
+				messageEvent["sticker"] = bson.M{"id": mediaId}
+			}
+
+			raw := bson.M{
+				"entry": []any{
+					bson.M{
+						"id": "1343302196977353", // opcional: pode deixar vazio ou buscar de config/env
+						"changes": []any{
+							bson.M{
+								"field": "messages",
+								"value": bson.M{
+									"messages": []any{messageEvent},
+								},
+							},
+						},
+					},
+				},
 			}
 
 			col := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_EVENTS_WHATSAPP)
-			_, _ = col.InsertOne(ctx, messageEvent)
-			_ = dbClient.Disconnect(ctx)
+			if _, err := col.InsertOne(ctx, raw); err != nil {
+				log.Printf("[SendMedia] Erro ao inserir no Mongo: %v", err)
+			}
 		}
 	}()
 
