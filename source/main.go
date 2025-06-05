@@ -44,6 +44,7 @@ func main() {
 	mux.Handle("GET /v1/clients/{id}", middlewares.LaravelAuth(http.HandlerFunc(clients.GetOne)))
 
 	mux.Handle("GET /v1/budgets", middlewares.LaravelAuth(http.HandlerFunc(budgets.GetAll)))
+	mux.Handle("POST /v1/budgets/shipping/{service}", middlewares.LaravelAuth(http.HandlerFunc(budgets.CreateShippingQuote)))
 	mux.Handle("GET /v1/budgets/{id}", middlewares.LaravelAuth(http.HandlerFunc(budgets.GetOne)))
 
 	mux.Handle("GET /v1/orders", middlewares.LaravelAuth(http.HandlerFunc(orders.GetAll)))
