@@ -73,8 +73,36 @@ func CreateShippingQuote(w http.ResponseWriter, r *http.Request) {
 		shippingServiceCode = "03220"
 	case "pac":
 		shippingServiceCode = "03298"
+	case "mini_envios":
+		shippingServiceCode = "04227"
+	case "sedex_10":
+		shippingServiceCode = "03158"
+	case "sedex_12":
+		shippingServiceCode = "03140"
+	case "jadlog":
+		shippingServiceCode = "F_3"
+	case "loggi":
+		shippingServiceCode = "LOG_DRPOFF"
+	case "total_express":
+		shippingServiceCode = "TOT_EXPRSS"
+	case "lalamove_lalago":
+		shippingServiceCode = "683"
+	case "lalamove_lalapro":
+		shippingServiceCode = "727"
+	case "lalamove_suv":
+		shippingServiceCode = "754"
+	case "lalamove_fiorino":
+		shippingServiceCode = "755"
+	case "lalamove_carreto":
+		shippingServiceCode = "756"
+	case "lalamove_fiorino_4h":
+		shippingServiceCode = "1083"
+	case "lalamove_carreto_6h":
+		shippingServiceCode = "1084"
+	case "lalamove_car":
+		shippingServiceCode = "1085"
 	default:
-		utils.SendResponse(w, http.StatusBadRequest, "Serviço inválido. Use 'sedex' ou 'pac'", nil, 0)
+		utils.SendResponse(w, http.StatusBadRequest, "Serviço inválido. Use um dos serviços válidos: 'sedex', 'pac', 'mini_envios', 'sedex_10', 'sedex_12', 'jadlog', 'loggi', 'total_express', 'lalamove_lalago', 'lalamove_lalapro', 'lalamove_suv', 'lalamove_fiorino', 'lalamove_carreto', 'lalamove_fiorino_4h', 'lalamove_carreto_6h', 'lalamove_car'", nil, 0)
 		return
 	}
 
