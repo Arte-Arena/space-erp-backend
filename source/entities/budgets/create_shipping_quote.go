@@ -64,7 +64,20 @@ type SedexData struct {
 	ServiceDescription string `json:"service_description"`
 }
 
-func CreateShippingQuoteSedex(w http.ResponseWriter, r *http.Request) {
+func CreateShippingQuote(w http.ResponseWriter, r *http.Request) {
+	service := r.PathValue("service")
+
+	shippingServiceCode := ""
+	switch service {
+	case "sedex":
+		shippingServiceCode = "03220"
+	case "pac":
+		shippingServiceCode = "03298"
+	default:
+		utils.SendResponse(w, http.StatusBadRequest, "Serviço inválido. Use 'sedex' ou 'pac'", nil, 0)
+		return
+	}
+
 	input := ShippingQuoteInput{}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		utils.SendResponse(w, http.StatusBadRequest, "Dados inválidos", nil, 0)
@@ -80,7 +93,7 @@ func CreateShippingQuoteSedex(w http.ResponseWriter, r *http.Request) {
 		SellerCEP:            input.SellerCEP,
 		RecipientCEP:         input.RecipientCEP,
 		ShipmentInvoiceValue: input.ShipmentInvoiceValue,
-		ShippingServiceCode:  SHIPPING_SERVICE_CODE,
+		ShippingServiceCode:  shippingServiceCode,
 		ShippingItemArray: []ShippingQuoteItem{
 			{
 				Height:   input.Height,
@@ -135,7 +148,7 @@ func CreateShippingQuoteSedex(w http.ResponseWriter, r *http.Request) {
 
 	var sedexData *SedexData = nil
 	for _, svc := range frenetResp.ShippingSevicesArray {
-		if svc.ServiceCode == SHIPPING_SERVICE_CODE {
+		if svc.ServiceCode == shippingServiceCode {
 			sedexData = &SedexData{
 				Price:              svc.ShippingPrice,
 				DeliveryTime:       svc.DeliveryTime,
@@ -147,7 +160,7 @@ func CreateShippingQuoteSedex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if sedexData == nil {
-		utils.SendResponse(w, http.StatusNotFound, "Serviço Sedex não encontrado na resposta da Frenet", nil, 0)
+		utils.SendResponse(w, http.StatusNotFound, "Serviço não encontrado na resposta da Frenet", nil, 0)
 		return
 	}
 
