@@ -62,6 +62,7 @@ type SpaceDeskMessage struct {
 	Timestamp string                `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
 	Text      *SpaceDeskMessageText `json:"text,omitempty" bson:"text,omitempty"`
 	Video     *SpaceDeskMedia       `json:"video,omitempty" bson:"video,omitempty"`
+	Sticker   *SpaceDeskMedia       `json:"sticker,omitempty" bson:"sticker,omitempty"`
 	Image     *SpaceDeskMedia       `json:"image,omitempty" bson:"image,omitempty"`
 	Audio     *SpaceDeskMedia       `json:"audio,omitempty" bson:"audio,omitempty"`
 	Document  *SpaceDeskMedia       `json:"document,omitempty" bson:"document,omitempty"`
