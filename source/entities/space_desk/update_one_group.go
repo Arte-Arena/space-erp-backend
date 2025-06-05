@@ -2,6 +2,7 @@ package spacedesk
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"os"
 
@@ -17,28 +18,31 @@ func UpdateOneGroup(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
 
-	idStr := r.URL.Query().Get("id")
-	field := r.URL.Query().Get("field")
-	value := r.URL.Query().Get("value")
+	var payload struct {
+		ID     string   `json:"id"`
+		Name   string   `json:"name"`
+		Chats  []string `json:"chats"`
+		Status string   `json:"status"`
+		Type   string   `json:"type"`
+	}
 
-	if idStr == "" || field == "" || value == "" {
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
 		return
 	}
 
-	objID, err := bson.ObjectIDFromHex(idStr)
+	objID, err := bson.ObjectIDFromHex(payload.ID)
 	if err != nil {
 		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.FUNNELS_INVALID_REQUEST_DATA)
 		return
 	}
 
-	allowed := map[string]bool{"name": true, "status": true, "type": true}
-	if !allowed[field] {
-		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
-		return
-	}
-
-	update := bson.M{"$set": bson.M{field: value}}
+	update := bson.M{"$set": bson.M{
+		"name":   payload.Name,
+		"chats":  payload.Chats,
+		"status": payload.Status,
+		"type":   payload.Type,
+	}}
 
 	mongoURI := os.Getenv(utils.MONGODB_URI)
 	opts := options.Client().ApplyURI(mongoURI)
