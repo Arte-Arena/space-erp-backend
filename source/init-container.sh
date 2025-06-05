@@ -7,7 +7,8 @@ echo "ENV=$ENV" >> .env
 echo "MYSQL_URI=$MYSQL_URI" >> .env
 echo "LARAVEL_API_URL=$LARAVEL_API_URL" >> .env
 echo "SPACE_DESK_WEBHOOK_X_API_KEY=$SPACE_DESK_WEBHOOK_X_API_KEY" >> .env
-echo "SPACE_DESK_API_KEY =$SPACE_DESK_API_KEY " >> .env
+echo "SPACE_DESK_API_KEY=$SPACE_DESK_API_KEY" >> .env
+echo "FRENET_API_KEY=$FRENET_API_KEY" >> .env
 
 
 echo "[arte arena security] Configurando variáveis de ambiente..."
