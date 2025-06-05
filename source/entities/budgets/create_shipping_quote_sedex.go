@@ -71,6 +71,11 @@ func CreateShippingQuoteSedex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if input.SellerCEP == "" || input.RecipientCEP == "" || input.ShipmentInvoiceValue == 0 || input.Height == 0 || input.Length == 0 || input.Weight == 0 || input.Width == 0 {
+		utils.SendResponse(w, http.StatusBadRequest, "Todos os campos são obrigatórios e devem ser preenchidos corretamente", nil, 0)
+		return
+	}
+
 	req := ShippingQuoteRequest{
 		SellerCEP:            input.SellerCEP,
 		RecipientCEP:         input.RecipientCEP,
