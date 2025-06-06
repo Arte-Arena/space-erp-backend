@@ -54,6 +54,11 @@ type SpaceDeskMedia struct {
 	// Outros campos conforme necessário
 }
 
+type ButtonInfo struct {
+	Text    string `bson:"text,omitempty" json:"text,omitempty"`
+	Payload string `bson:"payload,omitempty" json:"payload,omitempty"`
+}
+
 type SpaceDeskMessage struct {
 	Type      string                `json:"type" bson:"type"`
 	From      string                `json:"from,omitempty" bson:"from,omitempty"`
@@ -66,6 +71,7 @@ type SpaceDeskMessage struct {
 	Image     *SpaceDeskMedia       `json:"image,omitempty" bson:"image,omitempty"`
 	Audio     *SpaceDeskMedia       `json:"audio,omitempty" bson:"audio,omitempty"`
 	Document  *SpaceDeskMedia       `json:"document,omitempty" bson:"document,omitempty"`
+	Button    *ButtonInfo           `bson:"button,omitempty" json:"button,omitempty"`
 }
 
 type SpaceDeskMessageText struct {
