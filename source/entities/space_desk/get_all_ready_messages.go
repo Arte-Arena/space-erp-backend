@@ -31,7 +31,7 @@ func GetAllReadyMessages(w http.ResponseWriter, r *http.Request) {
 	}
 	defer dbClient.Disconnect(ctx)
 
-	col := dbClient.Database(database.GetDB()).Collection("ReadyChatMessages")
+	col := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_READY_MESSAGE)
 	cursor, err := col.Find(ctx, bson.M{})
 	if err != nil {
 		log.Println("Erro ao buscar mensagens prontas:", err)

@@ -49,7 +49,7 @@ func CreateOneReadyMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	defer dbClient.Disconnect(ctx)
 
-	col := dbClient.Database(database.GetDB()).Collection("ReadyChatMessages")
+	col := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_READY_MESSAGE)
 	res, err := col.InsertOne(ctx, bson.M{
 		"titulo":     body.Title,
 		"menssagens": body.Messages,

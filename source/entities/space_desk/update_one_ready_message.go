@@ -51,7 +51,7 @@ func UpdateOneReadyMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	defer dbClient.Disconnect(ctx)
 
-	col := dbClient.Database(database.GetDB()).Collection("ReadyChatMessages")
+	col := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_READY_MESSAGE)
 
 	update := bson.M{
 		"$set": bson.M{
@@ -61,7 +61,8 @@ func UpdateOneReadyMessage(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	filter := bson.M{"_id": body.ID}
+	objectID, _ := bson.ObjectIDFromHex(body.ID)
+	filter := bson.M{"_id": objectID}
 	res, err := col.UpdateOne(ctx, filter, update)
 	if err != nil {
 		log.Println("Erro ao atualizar mensagem pronta:", err)
