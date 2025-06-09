@@ -97,5 +97,5 @@ type Group struct {
 	Name   string        `bson:"name" json:"name"`
 	Status string        `bson:"status" json:"status"`
 	Type   string        `bson:"type" json:"type"`
-	Chats  []string      `bson:"chats" json:"chats"` // IDs dos chats como string (wa_id, por exemplo)
+	Chats  []string      `bson:"chats" json:"chats"`
 }
