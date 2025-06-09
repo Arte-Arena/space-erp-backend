@@ -17,6 +17,7 @@ const (
 	COLLECTION_FUNNELS_HISTORY            = "funnels_history"
 	COLLECTION_SPACE_DESK_EVENTS_WHATSAPP = "space_desk_events_whatsapp"
 	COLLECTION_SPACE_DESK_CHAT_METADATA   = "space_desk_chat_metadata"
+	COLLECTION_SPACE_DESK_READY_MESSAGE   = "ready_chat_messages"
 )
 
 func GetDB() string {
