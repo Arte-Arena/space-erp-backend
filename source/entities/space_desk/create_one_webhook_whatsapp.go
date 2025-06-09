@@ -2,6 +2,7 @@ package spacedesk
 
 import (
 	"api/database"
+	"api/schemas"
 	"api/utils"
 	"context"
 	"encoding/json"
@@ -116,7 +117,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lastMessageTimestamp := time.Unix(lastMessageTimestampInt, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+	lastMessageTimestamp := time.Unix(lastMessageTimestampInt, 0)
 	updatedAt := time.Now()
 	var lastMessage string
 	if msgType, ok := messages["type"].(string); ok && msgType == "text" {
@@ -146,7 +147,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updateOpts := options.UpdateOne().SetUpsert(true)
-	_, err = collection2.UpdateOne(ctx, filter, update, updateOpts)
+	updateResult, err := collection2.UpdateOne(ctx, filter, update, updateOpts)
 
 	if err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_INSERT_SPACE_DESK_CHAT_METADATA_TO_MONGODB)
@@ -154,6 +155,36 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	broadcastSpaceDeskMessage(event)
+
+	chatMetadataID := bson.ObjectID{}
+	if updateResult.UpsertedID != nil {
+		chatMetadataID = updateResult.UpsertedID.(bson.ObjectID)
+	} else {
+		var metadata struct {
+			ID bson.ObjectID `bson:"_id"`
+		}
+		if err := collection2.FindOne(ctx, filter).Decode(&metadata); err == nil {
+			chatMetadataID = metadata.ID
+		}
+	}
+
+	if !chatMetadataID.IsZero() {
+		collectionLeads := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_LEADS)
+		leadFilter := bson.M{"phone": clientPhoneNumber}
+		count, err := collectionLeads.CountDocuments(ctx, leadFilter)
+		if err == nil && count == 0 {
+			newLead := schemas.Lead{
+				Name:       name,
+				Phone:      clientPhoneNumber,
+				Source:     "SpaceDesk",
+				PlatformId: chatMetadataID.Hex(),
+				CreatedAt:  time.Now(),
+				UpdatedAt:  time.Now(),
+				Status:     "active",
+			}
+			collectionLeads.InsertOne(ctx, newLead)
+		}
+	}
 
 	utils.SendResponse(w, http.StatusCreated, "", nil, 0)
 }
