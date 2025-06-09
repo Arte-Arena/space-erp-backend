@@ -131,6 +131,8 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	wamid := extractWamid(respMap)
+
 	now := time.Now().UTC()
 	raw := bson.M{
 		"entry": []any{
@@ -143,6 +145,7 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 								bson.M{
 									"from":      "space-erp-backend",
 									"to":        reqBody.To,
+									"id":        wamid,
 									"timestamp": fmt.Sprint(now.Unix()),
 									"text":      bson.M{"body": reqBody.Body},
 								},
@@ -164,4 +167,19 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	broadcastSpaceDeskMessage(respMap)
 
 	utils.SendResponse(w, http.StatusCreated, "", respMap, 0)
+}
+
+func extractWamid(respMap map[string]interface{}) string {
+	wamid := "not_returned"
+	data, ok := respMap["messages"]
+	if ok {
+		if msgArr, ok := data.([]interface{}); ok && len(msgArr) > 0 {
+			if firstMsg, ok := msgArr[0].(map[string]interface{}); ok {
+				if idVal, ok := firstMsg["id"].(string); ok {
+					return idVal
+				}
+			}
+		}
+	}
+	return wamid
 }
