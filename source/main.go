@@ -80,7 +80,10 @@ func main() {
 
 	mux.Handle("POST /v1/space-desk/ready-messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneReadyMessage)))
 	mux.Handle("PUT /v1/space-desk/ready-messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateOneReadyMessage)))
+	mux.Handle("DELETE /v1/space-desk/ready-messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeleteOneReadyMessage)))
 	mux.Handle("GET /v1/space-desk/ready-messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllReadyMessages)))
+	
+	mux.Handle("POST /v1/space-desk/template-messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneTemplate)))
 
 	mux.HandleFunc("/v1/ws/space-desk", spacedesk.SpaceDeskWebSocketHandler)
 
