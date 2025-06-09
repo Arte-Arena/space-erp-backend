@@ -2,6 +2,7 @@ package spacedesk
 
 import (
 	"api/database"
+	"api/schemas"
 	"api/utils"
 	"context"
 	"encoding/json"
@@ -10,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -116,7 +118,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lastMessageTimestamp := time.Unix(lastMessageTimestampInt, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+	lastMessageTimestamp := time.Unix(lastMessageTimestampInt, 0)
 	updatedAt := time.Now()
 	var lastMessage string
 	if msgType, ok := messages["type"].(string); ok && msgType == "text" {
@@ -146,7 +148,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updateOpts := options.UpdateOne().SetUpsert(true)
-	_, err = collection2.UpdateOne(ctx, filter, update, updateOpts)
+	updateResult, err := collection2.UpdateOne(ctx, filter, update, updateOpts)
 
 	if err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_INSERT_SPACE_DESK_CHAT_METADATA_TO_MONGODB)
@@ -154,6 +156,66 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	broadcastSpaceDeskMessage(event)
+
+	chatMetadataID := bson.ObjectID{}
+	if updateResult.UpsertedID != nil {
+		chatMetadataID = updateResult.UpsertedID.(bson.ObjectID)
+	} else {
+		var metadata struct {
+			ID bson.ObjectID `bson:"_id"`
+		}
+		if err := collection2.FindOne(ctx, filter).Decode(&metadata); err == nil {
+			chatMetadataID = metadata.ID
+		}
+	}
+
+	if !chatMetadataID.IsZero() {
+		var rdb *redis.Client
+		redisURI := os.Getenv("REDIS_URI")
+		opts, err := redis.ParseURL(redisURI)
+		if err == nil {
+			rdb = redis.NewClient(opts)
+			defer rdb.Close()
+		}
+
+		redisKey := "spacedesk:lead:phone:" + clientPhoneNumber
+		cached := false
+		if rdb != nil {
+			if err := rdb.Get(ctx, redisKey).Err(); err == nil {
+				cached = true
+			}
+		}
+
+		if !cached {
+			collectionLeads := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_LEADS)
+			leadFilter := bson.M{"phone": clientPhoneNumber}
+			count, err := collectionLeads.CountDocuments(ctx, leadFilter)
+
+			if err == nil {
+				shouldCache := false
+				if count == 0 {
+					newLead := schemas.Lead{
+						Name:       name,
+						Phone:      clientPhoneNumber,
+						Source:     "SpaceDesk",
+						PlatformId: chatMetadataID.Hex(),
+						CreatedAt:  time.Now(),
+						UpdatedAt:  time.Now(),
+					}
+					if _, err := collectionLeads.InsertOne(ctx, newLead); err == nil {
+						shouldCache = true
+					}
+				} else {
+					shouldCache = true
+				}
+
+				if shouldCache && rdb != nil {
+					expiration := 90 * 24 * time.Hour
+					rdb.Set(ctx, redisKey, "1", expiration)
+				}
+			}
+		}
+	}
 
 	utils.SendResponse(w, http.StatusCreated, "", nil, 0)
 }
