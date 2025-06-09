@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -169,20 +170,51 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !chatMetadataID.IsZero() {
-		collectionLeads := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_LEADS)
-		leadFilter := bson.M{"phone": clientPhoneNumber}
-		count, err := collectionLeads.CountDocuments(ctx, leadFilter)
-		if err == nil && count == 0 {
-			newLead := schemas.Lead{
-				Name:       name,
-				Phone:      clientPhoneNumber,
-				Source:     "SpaceDesk",
-				PlatformId: chatMetadataID.Hex(),
-				CreatedAt:  time.Now(),
-				UpdatedAt:  time.Now(),
-				Status:     "active",
+		var rdb *redis.Client
+		redisURI := os.Getenv("REDIS_URI")
+		opts, err := redis.ParseURL(redisURI)
+		if err == nil {
+			rdb = redis.NewClient(opts)
+			defer rdb.Close()
+		}
+
+		redisKey := "spacedesk:lead:phone:" + clientPhoneNumber
+		cached := false
+		if rdb != nil {
+			if err := rdb.Get(ctx, redisKey).Err(); err == nil {
+				cached = true
 			}
-			collectionLeads.InsertOne(ctx, newLead)
+		}
+
+		if !cached {
+			collectionLeads := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_LEADS)
+			leadFilter := bson.M{"phone": clientPhoneNumber}
+			count, err := collectionLeads.CountDocuments(ctx, leadFilter)
+
+			if err == nil {
+				shouldCache := false
+				if count == 0 {
+					newLead := schemas.Lead{
+						Name:       name,
+						Phone:      clientPhoneNumber,
+						Source:     "SpaceDesk",
+						PlatformId: chatMetadataID.Hex(),
+						CreatedAt:  time.Now(),
+						UpdatedAt:  time.Now(),
+						Status:     "active",
+					}
+					if _, err := collectionLeads.InsertOne(ctx, newLead); err == nil {
+						shouldCache = true
+					}
+				} else {
+					shouldCache = true
+				}
+
+				if shouldCache && rdb != nil {
+					expiration := 90 * 24 * time.Hour
+					rdb.Set(ctx, redisKey, "1", expiration)
+				}
+			}
 		}
 	}
 
