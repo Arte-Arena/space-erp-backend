@@ -201,7 +201,6 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 						PlatformId: chatMetadataID.Hex(),
 						CreatedAt:  time.Now(),
 						UpdatedAt:  time.Now(),
-						Status:     "active",
 					}
 					if _, err := collectionLeads.InsertOne(ctx, newLead); err == nil {
 						shouldCache = true
