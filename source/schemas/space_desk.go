@@ -60,18 +60,36 @@ type ButtonInfo struct {
 }
 
 type SpaceDeskMessage struct {
-	Type      string                `json:"type" bson:"type"`
-	From      string                `json:"from,omitempty" bson:"from,omitempty"`
-	To        string                `json:"to,omitempty" bson:"to,omitempty"`
-	ID        string                `json:"id,omitempty" bson:"id,omitempty"`
-	Timestamp string                `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
-	Text      *SpaceDeskMessageText `json:"text,omitempty" bson:"text,omitempty"`
-	Video     *SpaceDeskMedia       `json:"video,omitempty" bson:"video,omitempty"`
-	Sticker   *SpaceDeskMedia       `json:"sticker,omitempty" bson:"sticker,omitempty"`
-	Image     *SpaceDeskMedia       `json:"image,omitempty" bson:"image,omitempty"`
-	Audio     *SpaceDeskMedia       `json:"audio,omitempty" bson:"audio,omitempty"`
-	Document  *SpaceDeskMedia       `json:"document,omitempty" bson:"document,omitempty"`
-	Button    *ButtonInfo           `bson:"button,omitempty" json:"button,omitempty"`
+	Type        string                `json:"type" bson:"type"`
+	From        string                `json:"from,omitempty" bson:"from,omitempty"`
+	To          string                `json:"to,omitempty" bson:"to,omitempty"`
+	ID          string                `json:"id,omitempty" bson:"id,omitempty"`
+	Timestamp   string                `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
+	Text        *SpaceDeskMessageText `json:"text,omitempty" bson:"text,omitempty"`
+	Video       *SpaceDeskMedia       `json:"video,omitempty" bson:"video,omitempty"`
+	Sticker     *SpaceDeskMedia       `json:"sticker,omitempty" bson:"sticker,omitempty"`
+	Image       *SpaceDeskMedia       `json:"image,omitempty" bson:"image,omitempty"`
+	Audio       *SpaceDeskMedia       `json:"audio,omitempty" bson:"audio,omitempty"`
+	Document    *SpaceDeskMedia       `json:"document,omitempty" bson:"document,omitempty"`
+	Button      *ButtonInfo           `bson:"button,omitempty" json:"button,omitempty"`
+	Interactive *SpaceDeskInteractive `json:"interactive,omitempty" bson:"interactive,omitempty"`
+}
+
+type SpaceDeskInteractive struct {
+	Type        string                           `json:"type" bson:"type"`
+	ButtonReply *SpaceDeskInteractiveButtonReply `json:"button_reply,omitempty" bson:"button_reply,omitempty"`
+	ListReply   *SpaceDeskInteractiveListReply   `json:"list_reply,omitempty" bson:"list_reply,omitempty"`
+}
+
+type SpaceDeskInteractiveButtonReply struct {
+	ID    string `json:"id" bson:"id"`
+	Title string `json:"title" bson:"title"`
+}
+
+type SpaceDeskInteractiveListReply struct {
+	ID          string `json:"id" bson:"id"`
+	Title       string `json:"title" bson:"title"`
+	Description string `json:"description,omitempty" bson:"description,omitempty"`
 }
 
 type SpaceDeskMessageText struct {
