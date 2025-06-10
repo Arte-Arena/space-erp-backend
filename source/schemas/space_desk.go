@@ -51,7 +51,6 @@ type SpaceDeskMedia struct {
 	MimeType string `json:"mime_type,omitempty" bson:"mime_type,omitempty"`
 	Sha256   string `json:"sha256,omitempty" bson:"sha256,omitempty"`
 	File     string `json:"filename,omitempty" bson:"filename,omitempty"`
-	// Outros campos conforme necessário
 }
 
 type ButtonInfo struct {
@@ -122,4 +121,45 @@ type Group struct {
 	Status string        `bson:"status" json:"status"`
 	Type   string        `bson:"type" json:"type"`
 	Chats  []string      `bson:"chats" json:"chats"`
+}
+
+type SpaceDeskStatus struct {
+	ID           string              `json:"id" bson:"id"`
+	Status       string              `json:"status" bson:"status"`
+	Timestamp    string              `json:"timestamp" bson:"timestamp"`
+	RecipientID  string              `json:"recipient_id" bson:"recipient_id"`
+	Conversation *StatusConversation `json:"conversation,omitempty" bson:"conversation,omitempty"`
+	Pricing      *StatusPricing      `json:"pricing,omitempty" bson:"pricing,omitempty"`
+	Errors       []StatusError       `json:"errors,omitempty" bson:"errors,omitempty"`
+}
+
+// StatusConversation contém informações sobre a conversa associada ao status.
+type StatusConversation struct {
+	ID     string       `json:"id" bson:"id"`
+	Origin StatusOrigin `json:"origin" bson:"origin"`
+}
+
+// StatusOrigin descreve a origem da conversa.
+type StatusOrigin struct {
+	Type string `json:"type" bson:"type"`
+}
+
+// StatusPricing detalha o custo da mensagem.
+type StatusPricing struct {
+	Billable     bool   `json:"billable" bson:"billable"`
+	PricingModel string `json:"pricing_model" bson:"pricing_model"`
+	Category     string `json:"category" bson:"category"`
+}
+
+// StatusError contém detalhes de um erro de entrega.
+type StatusError struct {
+	Code      int             `json:"code" bson:"code"`
+	Title     string          `json:"title" bson:"title"`
+	Message   string          `json:"message" bson:"message"`
+	ErrorData StatusErrorData `json:"error_data" bson:"error_data"`
+}
+
+// StatusErrorData contém os detalhes específicos do erro.
+type StatusErrorData struct {
+	Details string `json:"details" bson:"details"`
 }

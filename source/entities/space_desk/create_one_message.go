@@ -18,8 +18,9 @@ import (
 )
 
 type CreateMessageRequest struct {
-	To   string `json:"to"`
-	Body string `json:"body"`
+	To     string `json:"to"`
+	Body   string `json:"body"`
+	UserId string `json:"userId"`
 }
 
 func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
@@ -148,6 +149,7 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 									"id":        wamid,
 									"timestamp": fmt.Sprint(now.Unix()),
 									"text":      bson.M{"body": reqBody.Body},
+									"user":      reqBody.UserId,
 								},
 							},
 						},
