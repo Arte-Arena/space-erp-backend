@@ -26,10 +26,10 @@ type SpaceDeskMessageChange struct {
 }
 
 type SpaceDeskMessageValue struct {
-	MessagingProduct string                    `json:"messaging_product" bson:"messaging_product"`
-	Metadata         SpaceDeskMessageMetadata  `json:"metadata" bson:"metadata"`
-	Contacts         []SpaceDeskMessageContact `json:"contacts" bson:"contacts"`
-	Messages         []SpaceDeskMessage        `json:"messages" bson:"messages"`
+	MessagingProduct string                    `json:"messaging_product,omitempty" bson:"messaging_product,omitempty"`
+	Metadata         *SpaceDeskMessageMetadata `json:"metadata,omitempty" bson:"metadata,omitempty"`
+	Contacts         []SpaceDeskMessageContact `json:"contacts,omitempty" bson:"contacts,omitempty"`
+	Messages         []SpaceDeskMessage        `json:"messages,omitempty" bson:"messages,omitempty"`
 }
 
 type SpaceDeskMessageMetadata struct {
@@ -60,19 +60,25 @@ type ButtonInfo struct {
 }
 
 type SpaceDeskMessage struct {
-	Type        string                `json:"type" bson:"type"`
-	From        string                `json:"from,omitempty" bson:"from,omitempty"`
-	To          string                `json:"to,omitempty" bson:"to,omitempty"`
-	ID          string                `json:"id,omitempty" bson:"id,omitempty"`
-	Timestamp   string                `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
-	Text        *SpaceDeskMessageText `json:"text,omitempty" bson:"text,omitempty"`
-	Video       *SpaceDeskMedia       `json:"video,omitempty" bson:"video,omitempty"`
-	Sticker     *SpaceDeskMedia       `json:"sticker,omitempty" bson:"sticker,omitempty"`
-	Image       *SpaceDeskMedia       `json:"image,omitempty" bson:"image,omitempty"`
-	Audio       *SpaceDeskMedia       `json:"audio,omitempty" bson:"audio,omitempty"`
-	Document    *SpaceDeskMedia       `json:"document,omitempty" bson:"document,omitempty"`
-	Button      *ButtonInfo           `bson:"button,omitempty" json:"button,omitempty"`
-	Interactive *SpaceDeskInteractive `json:"interactive,omitempty" bson:"interactive,omitempty"`
+	Type        string                   `json:"type" bson:"type"`
+	From        string                   `json:"from,omitempty" bson:"from,omitempty"`
+	To          string                   `json:"to,omitempty" bson:"to,omitempty"`
+	ID          string                   `json:"id,omitempty" bson:"id,omitempty"`
+	Timestamp   string                   `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
+	Text        *SpaceDeskMessageText    `json:"text,omitempty" bson:"text,omitempty"`
+	Video       *SpaceDeskMedia          `json:"video,omitempty" bson:"video,omitempty"`
+	Sticker     *SpaceDeskMedia          `json:"sticker,omitempty" bson:"sticker,omitempty"`
+	Image       *SpaceDeskMedia          `json:"image,omitempty" bson:"image,omitempty"`
+	Audio       *SpaceDeskMedia          `json:"audio,omitempty" bson:"audio,omitempty"`
+	Document    *SpaceDeskMedia          `json:"document,omitempty" bson:"document,omitempty"`
+	Button      *ButtonInfo              `bson:"button,omitempty" json:"button,omitempty"`
+	Interactive *SpaceDeskInteractive    `json:"interactive,omitempty" bson:"interactive,omitempty"`
+	Context     *SpaceDeskMessageContext `json:"context,omitempty" bson:"context,omitempty"`
+}
+
+type SpaceDeskMessageContext struct {
+	From string `json:"from,omitempty" bson:"from,omitempty"`
+	ID   string `json:"id,omitempty" bson:"id,omitempty"` // ID da mensagem original que foi respondida
 }
 
 type SpaceDeskInteractive struct {
