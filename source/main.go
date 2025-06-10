@@ -85,6 +85,7 @@ func main() {
 	
 	mux.Handle("POST /v1/space-desk/template-messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneTemplate)))
 	mux.Handle("GET /v1/space-desk/template-messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.ListAndSyncD360Templates)))
+	mux.Handle("DELETE /v1/space-desk/template-messages/", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeleteD360Template)))
 
 	mux.HandleFunc("/v1/ws/space-desk", spacedesk.SpaceDeskWebSocketHandler)
 

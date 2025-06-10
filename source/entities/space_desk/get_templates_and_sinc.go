@@ -3,8 +3,10 @@ package spacedesk
 import (
 	"api/database"
 	"api/utils"
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -16,7 +18,7 @@ import (
 )
 
 type ListTemplatesResp struct {
-	Templates []D360Template `json:"templates"`
+	Templates []D360Template `json:"waba_templates"`
 }
 
 type D360Template struct {
@@ -51,6 +53,10 @@ func ListAndSyncD360Templates(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
+	// Logar resposta bruta da API D360
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
 	var tplResp ListTemplatesResp
 	if err := json.NewDecoder(resp.Body).Decode(&tplResp); err != nil {
 		http.Error(w, "Erro ao ler resposta da D360: "+err.Error(), http.StatusInternalServerError)
@@ -76,7 +82,7 @@ func ListAndSyncD360Templates(w http.ResponseWriter, r *http.Request) {
 	// 3. Para cada template aprovado/pending, tenta inserir se não existir
 	for _, tpl := range tplResp.Templates {
 		if tpl.Status == "rejected" {
-			continue // pula rejeitados
+			continue
 		}
 		// Verifica se já existe pelo nome
 		count, err := col.CountDocuments(ctx, bson.M{"titulo": tpl.Name})
@@ -95,7 +101,6 @@ func ListAndSyncD360Templates(w http.ResponseWriter, r *http.Request) {
 			if body == "" {
 				body = "(sem mensagem de corpo definida)"
 			}
-			// Insere
 			_, err := col.InsertOne(ctx, bson.M{
 				"titulo":     tpl.Name,
 				"menssagens": []string{body},
@@ -108,7 +113,6 @@ func ListAndSyncD360Templates(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 4. Retorna a lista dos templates da D360 para o frontend
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tplResp)
 }
