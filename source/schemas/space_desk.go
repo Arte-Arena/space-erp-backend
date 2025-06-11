@@ -110,6 +110,7 @@ type SpaceDeskChatMetadata struct {
 	Status            string          `json:"status" bson:"status"`
 	Type              string          `json:"type" bson:"type"`
 	GroupIds          []bson.ObjectID `json:"group_ids" bson:"group_ids"`
+	UserId            string          `json:"user_id" bson:"user_id"`
 	CreatedAt         time.Time       `json:"created_at" bson:"created_at"`
 	UpdatedAt         time.Time       `json:"updated_at" bson:"updated_at"`
 	LastMessage       time.Time       `json:"last_message_timestamp" bson:"last_message_timestamp"`

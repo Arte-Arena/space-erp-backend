@@ -63,22 +63,22 @@ func main() {
 
 	mux.Handle("POST /v1/space-desk/message", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneMessage)))
 	mux.Handle("POST /v1/space-desk/media", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneMedia)))
-
+	
 	mux.Handle("GET /v1/space-desk/media-base64", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.HandlerMediaBase64)))
 	mux.Handle("GET /v1/space-desk/media-download", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.HandlerMediaDownload)))
-
+	
 	mux.Handle("POST /v1/space-desk/group", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneGroup)))
 	mux.Handle("PATCH /v1/space-desk/group", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateOneGroup)))
 	mux.Handle("GET /v1/space-desk/group", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllGroups)))
 	mux.Handle("DELETE /v1/space-desk/group", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeleteGroup)))
-
+	
 	mux.Handle("PATCH /v1/space-desk/chats/status", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateChatStatus)))
 	mux.Handle("PATCH /v1/space-desk/chats/user", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateChatUser)))
 	
 	mux.Handle("POST /v1/space-desk/group-chat", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.AddChatToGroup)))
 	mux.Handle("DELETE /v1/space-desk/group-chat", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeleteChatFromGroup)))
 	mux.Handle("GET /v1/space-desk/chats-group", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetChatsByGroup)))
-
+	
 	mux.Handle("POST /v1/space-desk/ready-messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneReadyMessage)))
 	mux.Handle("PUT /v1/space-desk/ready-messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateOneReadyMessage)))
 	mux.Handle("DELETE /v1/space-desk/ready-messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeleteOneReadyMessage)))
@@ -87,7 +87,9 @@ func main() {
 	mux.Handle("POST /v1/space-desk/template-messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneTemplate)))
 	mux.Handle("GET /v1/space-desk/template-messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.ListAndSyncD360Templates)))
 	mux.Handle("DELETE /v1/space-desk/template-messages/", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeleteD360Template)))
-
+	
+	mux.Handle("POST /v1/space-desk/poll", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOnePoll)))
+	
 	mux.HandleFunc("/v1/ws/space-desk", spacedesk.SpaceDeskWebSocketHandler)
 
 	fmt.Printf("Servidor iniciado na porta %s às %s\n", os.Getenv(utils.PORT), time.Now().Format("2006-01-02 15:04:05"))
