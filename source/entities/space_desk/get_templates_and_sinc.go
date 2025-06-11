@@ -91,6 +91,12 @@ func ListAndSyncD360Templates(w http.ResponseWriter, r *http.Request) {
 		}
 		if count == 0 {
 			// Extrai o texto do body (se existir)
+			newTitle := "R$ " + tpl.Name
+			countWithPrefix, err := col.CountDocuments(ctx, bson.M{"titulo": newTitle})
+			if err != nil || countWithPrefix > 0 {
+				continue
+			}
+
 			body := ""
 			for _, c := range tpl.Components {
 				if strings.ToLower(c.Type) == "body" && c.Text != "" {
@@ -101,8 +107,8 @@ func ListAndSyncD360Templates(w http.ResponseWriter, r *http.Request) {
 			if body == "" {
 				body = "(sem mensagem de corpo definida)"
 			}
-			_, err := col.InsertOne(ctx, bson.M{
-				"titulo":     tpl.Name,
+			_, err = col.InsertOne(ctx, bson.M{
+				"titulo":     newTitle,
 				"menssagens": []string{body},
 				"createdAt":  time.Now().UTC(),
 			})
