@@ -19,7 +19,7 @@ const (
 )
 
 type User struct {
-	ID        bson.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	ID        bson.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	OldID     uint64        `json:"old_id" bson:"old_id"`
 	Name      string        `json:"name" bson:"name"`
 	Email     string        `json:"email" bson:"email"`
