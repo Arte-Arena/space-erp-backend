@@ -75,6 +75,24 @@ type SpaceDeskMessage struct {
 	Context     *SpaceDeskMessageContext `json:"context,omitempty" bson:"context,omitempty"`
 	Poll        *SpaceDeskPoll           `json:"poll,omitempty" bson:"poll,omitempty"`
 	List        *SpaceDeskList           `json:"list,omitempty" bson:"list,omitempty"`
+	Contacts    *[]SpaceDeskContact      `json:"contacts,omitempty" bson:"contacts,omitempty"`
+}
+
+type SpaceDeskContactPhone struct {
+	Phone string `json:"phone" bson:"phone"`
+	WaID  string `json:"wa_id" bson:"wa_id"`
+	Type  string `json:"type" bson:"type"`
+}
+
+type SpaceDeskContactName struct {
+	FirstName     string `json:"first_name" bson:"first_name"`
+	LastName      string `json:"last_name" bson:"last_name"`
+	FormattedName string `json:"formatted_name" bson:"formatted_name"`
+}
+
+type SpaceDeskContact struct {
+	Name   SpaceDeskContactName    `json:"name" bson:"name"`
+	Phones []SpaceDeskContactPhone `json:"phones" bson:"phones"`
 }
 
 type SpaceDeskList struct {
