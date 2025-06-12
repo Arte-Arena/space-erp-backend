@@ -7,6 +7,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -78,16 +80,42 @@ func CreateOnePoll(w http.ResponseWriter, r *http.Request) {
 	for _, o := range reqBody.Poll.Options {
 		pollOptions = append(pollOptions, map[string]string{"option": o})
 	}
+	// var btns []map[string]interface{}
+	// for i, option := range reqBody.Poll.Options {
+	// 	btns = append(btns, map[string]interface{}{
+	// 		"type": "reply",
+	// 		"reply": map[string]interface{}{
+	// 			"id":    fmt.Sprintf("option_%d", i+1),
+	// 			"title": option,
+	// 		},
+	// 	})
+	// }
 
-	payload := map[string]any{
+	payload := map[string]interface{}{
 		"messaging_product": "whatsapp",
 		"recipient_type":    "individual",
 		"to":                recipient,
-		"type":              "poll",
-		"poll": map[string]any{
-			"name":                     reqBody.Poll.Name,
-			"options":                  pollOptions, // <-- array de objetos, não array de string!
-			"selectable_options_count": reqBody.Poll.SelectableOptionsCount,
+		"type":              "interactive",
+		"interactive": map[string]interface{}{
+			"type": "button",
+			"body": map[string]string{
+				"text": reqBody.Poll.Name, // ou outra mensagem
+			},
+			"action": map[string]interface{}{
+				"buttons": func() []map[string]interface{} {
+					var btns []map[string]interface{}
+					for i, option := range reqBody.Poll.Options {
+						btns = append(btns, map[string]interface{}{
+							"type": "reply",
+							"reply": map[string]interface{}{
+								"id":    fmt.Sprintf("option_%d", i+1),
+								"title": option,
+							},
+						})
+					}
+					return btns
+				}(),
+			},
 		},
 	}
 
@@ -123,12 +151,19 @@ func CreateOnePoll(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
+	respBody, _ := io.ReadAll(resp.Body)
+	log.Printf("Resposta da 360dialog: %s", string(respBody))
+
 	respMap := make(map[string]any)
-	if err := json.NewDecoder(resp.Body).Decode(&respMap); err != nil {
+	if err := json.Unmarshal(respBody, &respMap); err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao ler resposta externa", nil, utils.ERROR_TO_READ_MESSAGE)
 		return
 	}
 	wamid := extractWamid(respMap)
+	if wamid == "not_returned" {
+		utils.SendResponse(w, http.StatusBadGateway, "A API não retornou o wamid, mensagem não salva.", nil, utils.ERROR_TO_SEND_MESSAGE)
+		return
+	}
 
 	now := time.Now().UTC()
 	raw := bson.M{
@@ -140,6 +175,7 @@ func CreateOnePoll(w http.ResponseWriter, r *http.Request) {
 						"value": bson.M{
 							"messages": []any{
 								bson.M{
+									"type":      "poll",
 									"from":      "space-erp-backend",
 									"to":        reqBody.To,
 									"id":        wamid,

@@ -73,6 +73,13 @@ type SpaceDeskMessage struct {
 	Button      *ButtonInfo              `bson:"button,omitempty" json:"button,omitempty"`
 	Interactive *SpaceDeskInteractive    `json:"interactive,omitempty" bson:"interactive,omitempty"`
 	Context     *SpaceDeskMessageContext `json:"context,omitempty" bson:"context,omitempty"`
+	Poll        *SpaceDeskPoll           `json:"poll,omitempty" bson:"poll,omitempty"`
+}
+
+type SpaceDeskPoll struct {
+	Name                   string   `json:"name" bson:"name"`
+	Options                []string `json:"options" bson:"options"`
+	SelectableOptionsCount int      `json:"selectable_options_count,omitempty" bson:"selectable_options_count,omitempty"`
 }
 
 type SpaceDeskMessageContext struct {
