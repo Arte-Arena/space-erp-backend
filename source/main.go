@@ -90,6 +90,7 @@ func main() {
 
 	mux.Handle("POST /v1/space-desk/poll", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOnePoll)))
 	mux.Handle("POST /v1/space-desk/list", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateListMessage)))
+	mux.Handle("POST /v1/space-desk/location", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateLocationRequestMessage)))
 
 	mux.HandleFunc("/v1/ws/space-desk", spacedesk.SpaceDeskWebSocketHandler)
 

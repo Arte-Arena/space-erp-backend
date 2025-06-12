@@ -59,23 +59,36 @@ type ButtonInfo struct {
 }
 
 type SpaceDeskMessage struct {
-	Type        string                   `json:"type" bson:"type"`
-	From        string                   `json:"from,omitempty" bson:"from,omitempty"`
-	To          string                   `json:"to,omitempty" bson:"to,omitempty"`
-	ID          string                   `json:"id,omitempty" bson:"id,omitempty"`
-	Timestamp   string                   `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
-	Text        *SpaceDeskMessageText    `json:"text,omitempty" bson:"text,omitempty"`
-	Video       *SpaceDeskMedia          `json:"video,omitempty" bson:"video,omitempty"`
-	Sticker     *SpaceDeskMedia          `json:"sticker,omitempty" bson:"sticker,omitempty"`
-	Image       *SpaceDeskMedia          `json:"image,omitempty" bson:"image,omitempty"`
-	Audio       *SpaceDeskMedia          `json:"audio,omitempty" bson:"audio,omitempty"`
-	Document    *SpaceDeskMedia          `json:"document,omitempty" bson:"document,omitempty"`
-	Button      *ButtonInfo              `bson:"button,omitempty" json:"button,omitempty"`
-	Interactive *SpaceDeskInteractive    `json:"interactive,omitempty" bson:"interactive,omitempty"`
-	Context     *SpaceDeskMessageContext `json:"context,omitempty" bson:"context,omitempty"`
-	Poll        *SpaceDeskPoll           `json:"poll,omitempty" bson:"poll,omitempty"`
-	List        *SpaceDeskList           `json:"list,omitempty" bson:"list,omitempty"`
-	Contacts    *[]SpaceDeskContact      `json:"contacts,omitempty" bson:"contacts,omitempty"`
+	Type            string                    `json:"type" bson:"type"`
+	From            string                    `json:"from,omitempty" bson:"from,omitempty"`
+	To              string                    `json:"to,omitempty" bson:"to,omitempty"`
+	ID              string                    `json:"id,omitempty" bson:"id,omitempty"`
+	Timestamp       string                    `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
+	Text            *SpaceDeskMessageText     `json:"text,omitempty" bson:"text,omitempty"`
+	Video           *SpaceDeskMedia           `json:"video,omitempty" bson:"video,omitempty"`
+	Sticker         *SpaceDeskMedia           `json:"sticker,omitempty" bson:"sticker,omitempty"`
+	Image           *SpaceDeskMedia           `json:"image,omitempty" bson:"image,omitempty"`
+	Audio           *SpaceDeskMedia           `json:"audio,omitempty" bson:"audio,omitempty"`
+	Document        *SpaceDeskMedia           `json:"document,omitempty" bson:"document,omitempty"`
+	Button          *ButtonInfo               `bson:"button,omitempty" json:"button,omitempty"`
+	Interactive     *SpaceDeskInteractive     `json:"interactive,omitempty" bson:"interactive,omitempty"`
+	Context         *SpaceDeskMessageContext  `json:"context,omitempty" bson:"context,omitempty"`
+	Poll            *SpaceDeskPoll            `json:"poll,omitempty" bson:"poll,omitempty"`
+	List            *SpaceDeskList            `json:"list,omitempty" bson:"list,omitempty"`
+	Contacts        *[]SpaceDeskContact       `json:"contacts,omitempty" bson:"contacts,omitempty"`
+	LocationRequest *SpaceDeskLocationRequest `json:"location_request,omitempty" bson:"location_request,omitempty"`
+	Location        *SpaceDeskLocation        `json:"location,omitempty" bson:"location,omitempty"`
+	Body            string                    `json:"body,omitempty" bson:"body,omitempty"`
+}
+
+type SpaceDeskLocationRequest struct {
+	Body string `json:"body" bson:"body"`
+}
+type SpaceDeskLocation struct {
+	Name      string  `json:"name,omitempty" bson:"name,omitempty"`
+	Address   string  `json:"address,omitempty" bson:"address,omitempty"`
+	Latitude  float64 `json:"latitude" bson:"latitude"`
+	Longitude float64 `json:"longitude" bson:"longitude"`
 }
 
 type SpaceDeskContactPhone struct {
