@@ -36,9 +36,19 @@ func GetAllStatuses(w http.ResponseWriter, r *http.Request) {
 	defer mongoClient.Disconnect(ctx)
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_EVENTS_WHATSAPP)
+	pipeline := mongo.Pipeline{
+		bson.D{{Key: "$unwind", Value: "$entry"}},
+		bson.D{{Key: "$unwind", Value: "$entry.changes"}},
+		bson.D{{Key: "$unwind", Value: "$entry.changes.value.statuses"}},
+		bson.D{
+			{Key: "$replaceRoot", Value: bson.D{
+				{Key: "newRoot", Value: "$entry.changes.value.statuses"},
+			}},
+		},
+		bson.D{{Key: "$sort", Value: bson.D{{Key: "_id", Value: -1}}}},
+	}
 
-	findOptions := options.Find().SetSort(bson.D{{Key: "_id", Value: -1}})
-	cursor, err := collection.Find(ctx, bson.D{}, findOptions)
+	cursor, err := collection.Aggregate(ctx, pipeline)
 	if err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_LEADS_IN_MONGODB)
 		return
@@ -46,57 +56,40 @@ func GetAllStatuses(w http.ResponseWriter, r *http.Request) {
 	defer cursor.Close(ctx)
 
 	allStatuses := []bson.M{}
+	uniqueStatuses := map[string]bson.M{}
+
 	for cursor.Next(ctx) {
 		doc := bson.M{}
 		if err := cursor.Decode(&doc); err != nil {
 			continue
 		}
-
-		entries, ok := doc["entry"].([]any)
+		// Filtro pelo timestamp, se necessário
+		tsStr, ok := doc["timestamp"].(string)
 		if !ok {
 			continue
 		}
-		for _, entryRaw := range entries {
-			entry, ok := entryRaw.(map[string]any)
-			if !ok {
-				continue
-			}
-			changes, ok := entry["changes"].([]any)
-			if !ok {
-				continue
-			}
-			for _, changeRaw := range changes {
-				change, ok := changeRaw.(map[string]any)
-				if !ok {
-					continue
-				}
-				value, ok := change["value"].(map[string]any)
-				if !ok {
-					continue
-				}
-				statuses, ok := value["statuses"].([]any)
-				if !ok {
-					continue
-				}
-				for _, statusRaw := range statuses {
-					status, ok := statusRaw.(map[string]any)
-					if !ok {
-						continue
-					}
-					tsStr, ok := status["timestamp"].(string)
-					if !ok {
-						continue
-					}
-					tsInt, err := strconv.ParseInt(tsStr, 10, 64)
-					if err != nil {
-						continue
-					}
-					if minTimestamp == 0 || tsInt >= minTimestamp {
-						allStatuses = append(allStatuses, status)
-					}
-				}
-			}
+		tsInt, err := strconv.ParseInt(tsStr, 10, 64)
+		if err != nil {
+			continue
 		}
+		if minTimestamp != 0 && tsInt < minTimestamp {
+			continue
+		}
+
+		// Deduplicação pelo id
+		idStr, ok := doc["id"].(string)
+		if !ok {
+			continue
+		}
+		// Só adiciona se ainda não tem no mapa
+		if _, found := uniqueStatuses[idStr]; !found {
+			uniqueStatuses[idStr] = doc
+		}
+		// Se quiser sempre o último, faça: uniqueStatuses[idStr] = doc
+	}
+
+	for _, status := range uniqueStatuses {
+		allStatuses = append(allStatuses, status)
 	}
 
 	utils.SendResponse(w, http.StatusOK, "", allStatuses, 0)
