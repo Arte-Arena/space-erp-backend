@@ -74,6 +74,25 @@ type SpaceDeskMessage struct {
 	Interactive *SpaceDeskInteractive    `json:"interactive,omitempty" bson:"interactive,omitempty"`
 	Context     *SpaceDeskMessageContext `json:"context,omitempty" bson:"context,omitempty"`
 	Poll        *SpaceDeskPoll           `json:"poll,omitempty" bson:"poll,omitempty"`
+	List        *SpaceDeskList           `json:"list,omitempty" bson:"list,omitempty"`
+}
+
+type SpaceDeskList struct {
+	Body     string             `json:"body" bson:"body"`
+	Footer   string             `json:"footer,omitempty" bson:"footer,omitempty"`
+	Button   string             `json:"button" bson:"button"`
+	Sections []SpaceDeskSection `json:"sections" bson:"sections"`
+}
+
+type SpaceDeskSection struct {
+	Title string         `json:"title" bson:"title"`
+	Rows  []SpaceDeskRow `json:"rows" bson:"rows"`
+}
+
+type SpaceDeskRow struct {
+	ID          string `json:"id" bson:"id"`
+	Title       string `json:"title" bson:"title"`
+	Description string `json:"description,omitempty" bson:"description,omitempty"`
 }
 
 type SpaceDeskPoll struct {
