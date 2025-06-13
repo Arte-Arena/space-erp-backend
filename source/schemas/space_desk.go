@@ -221,3 +221,27 @@ type StatusError struct {
 type StatusErrorData struct {
 	Details string `json:"details" bson:"details"`
 }
+
+// ------ Configurações ------
+
+type PhoneConfig struct {
+	Nome   string `bson:"nome" json:"nome"`
+	Numero string `bson:"numero" json:"numero"`
+	Status string `bson:"status" json:"status"`
+	Label  string `bson:"label" json:"label"`
+}
+
+type NotificationsConfig struct {
+	Email bool `bson:"email" json:"email"`
+	Push  bool `bson:"push" json:"push"`
+}
+
+type Settings struct {
+	ID            bson.ObjectID        `bson:"_id,omitempty" json:"id"`
+	Type          string               `bson:"type" json:"type"`
+	Phones        []PhoneConfig        `bson:"phones" json:"phones"`
+	Theme         string               `bson:"theme,omitempty" json:"theme,omitempty"`
+	Notifications *NotificationsConfig `bson:"notifications,omitempty" json:"notifications,omitempty"`
+	CreatedAt     time.Time            `bson:"createdAt" json:"createdAt"`
+	UpdatedAt     time.Time            `bson:"updatedAt" json:"updatedAt"`
+}
