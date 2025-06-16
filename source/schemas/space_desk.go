@@ -59,6 +59,7 @@ type ButtonInfo struct {
 }
 
 type SpaceDeskMessage struct {
+	User            string                    `json:"user" bson:"user"`
 	Type            string                    `json:"type" bson:"type"`
 	From            string                    `json:"from,omitempty" bson:"from,omitempty"`
 	To              string                    `json:"to,omitempty" bson:"to,omitempty"`
