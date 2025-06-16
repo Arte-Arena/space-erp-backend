@@ -21,6 +21,7 @@ type CreateMessageRequest struct {
 	To     string `json:"to"`
 	Body   string `json:"body"`
 	UserId string `json:"userId"`
+	Type   string `json:"type"`
 }
 
 func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +63,6 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	objID, err := bson.ObjectIDFromHex(reqBody.To)
 	if err != nil {
 		log.Println("Erro ao converter ID do chat para ObjectID:", err, "ID recebido:", reqBody.To)
-		// É uma boa prática ter um código de erro específico para ID inválido
 		utils.SendResponse(w, http.StatusBadRequest, "ID do chat inválido", nil, utils.INVALID_CHAT_ID_FORMAT)
 		return
 	}
@@ -80,15 +80,30 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	// Usar o número do cliente como destinatário
 	recipient := chatDoc.ClientePhoneNumber
 
-	payload := map[string]any{
-		"messaging_product": "whatsapp",
-		"recipient_type":    "individual",
-		"to":                recipient,
-		"type":              "text",
-		"text": map[string]string{
-			"body": reqBody.Body,
-		},
+	var payload map[string]any
+	if reqBody.Type == "template" {
+		payload = map[string]any{
+			"messaging_product": "whatsapp",
+			"to":                recipient,
+			"type":              "template",
+			"template": map[string]any{
+				"name":     reqBody.Body,
+				"language": map[string]string{"code": "pt_BR"},
+				// Se quiser: componentes podem ser adicionados aqui
+			},
+		}
+	} else {
+		payload = map[string]any{
+			"messaging_product": "whatsapp",
+			"recipient_type":    "individual",
+			"to":                recipient,
+			"type":              "text",
+			"text": map[string]string{
+				"body": reqBody.Body,
+			},
+		}
 	}
+
 	bodyBytes, err := json.Marshal(payload)
 	if err != nil {
 		log.Println("Erro ao serializar payload:", err)
