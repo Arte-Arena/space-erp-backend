@@ -18,10 +18,12 @@ import (
 )
 
 type CreateMessageRequest struct {
-	To     string `json:"to"`
-	Body   string `json:"body"`
-	UserId string `json:"userId"`
-	Type   string `json:"type"`
+	To           string `json:"to"`
+	Body         string `json:"body"`
+	UserId       string `json:"userId"`
+	Type         string `json:"type"`
+	TemplateName string `json:"templateName"`
+	Params       any    `json:"params"`
 }
 
 func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
@@ -87,9 +89,14 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 			"to":                recipient,
 			"type":              "template",
 			"template": map[string]any{
-				"name":     reqBody.Body,
+				"name":     reqBody.TemplateName,
 				"language": map[string]string{"code": "pt_BR"},
-				// Se quiser: componentes podem ser adicionados aqui
+				"components": []any{
+					map[string]any{
+						"type":       "body",
+						"parameters": reqBody.Params,
+					},
+				},
 			},
 		}
 	} else {
