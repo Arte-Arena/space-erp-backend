@@ -180,6 +180,7 @@ type Group struct {
 	Status string        `bson:"status" json:"status"`
 	Type   string        `bson:"type" json:"type"`
 	Chats  []string      `bson:"chats" json:"chats"`
+	Users  []string      `bson:"users" json:"users"`
 }
 
 type SpaceDeskStatus struct {

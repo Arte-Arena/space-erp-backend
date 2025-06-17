@@ -30,6 +30,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.Handle("GET /v1/user/{id}", middlewares.LaravelAuth(http.HandlerFunc(users.GetOneUser)))
+	mux.Handle("GET /v1/user", middlewares.LaravelAuth(http.HandlerFunc(users.GetAllUsers)))
 
 	mux.Handle("GET /v1/funnels", middlewares.LaravelAuth(http.HandlerFunc(funnels.GetAll)))
 	mux.Handle("GET /v1/funnels/{id}", middlewares.LaravelAuth(http.HandlerFunc(funnels.GetOne)))
