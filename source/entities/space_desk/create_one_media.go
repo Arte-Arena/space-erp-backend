@@ -36,6 +36,13 @@ func CreateOneMedia(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Parâmetro 'chatId' ausente", http.StatusBadRequest)
 		return
 	}
+
+	userId := r.FormValue("userId")
+	if userId == "" {
+		http.Error(w, "Parâmetro 'userId' ausente", http.StatusBadRequest)
+		return
+	}
+
 	mediaType := r.FormValue("type")
 	file, header, err := r.FormFile("file")
 	if err != nil {
@@ -163,6 +170,7 @@ func CreateOneMedia(w http.ResponseWriter, r *http.Request) {
 				"id":        msgID,
 				"timestamp": timestampStr,
 				"type":      mediaType,
+				"user":      userId,
 			}
 			switch mediaType {
 			case "image":

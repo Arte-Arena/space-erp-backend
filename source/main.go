@@ -8,7 +8,7 @@ import (
 	"api/entities/leads"
 	"api/entities/orders"
 	spacedesk "api/entities/space_desk"
-	"api/entities/users"
+	users "api/entities/users"
 	"api/middlewares"
 	"api/utils"
 	"fmt"
@@ -28,6 +28,9 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
+
+	mux.Handle("GET /v1/user/{id}", middlewares.LaravelAuth(http.HandlerFunc(users.GetOneUser)))
+	mux.Handle("GET /v1/user", middlewares.LaravelAuth(http.HandlerFunc(users.GetAllUsers)))
 
 	mux.Handle("GET /v1/funnels", middlewares.LaravelAuth(http.HandlerFunc(funnels.GetAll)))
 	mux.Handle("GET /v1/funnels/{id}", middlewares.LaravelAuth(http.HandlerFunc(funnels.GetOne)))
@@ -73,8 +76,12 @@ func main() {
 
 	mux.Handle("POST /v1/space-desk/group", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneGroup)))
 	mux.Handle("PATCH /v1/space-desk/group", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateOneGroup)))
+	mux.Handle("PATCH /v1/space-desk/group-users", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateGroupUsers)))
+	mux.Handle("POST /v1/space-desk/group-users", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.AddUsersToGroup)))
 	mux.Handle("GET /v1/space-desk/group", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllGroups)))
 	mux.Handle("DELETE /v1/space-desk/group", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeleteGroup)))
+	mux.Handle("DELETE /v1/space-desk/group-users", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeleteUserFromGroup)))
+	mux.Handle("GET /v1/space-desk/group-chats/{groupId}", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetChatsFromGroup)))
 
 	mux.Handle("PATCH /v1/space-desk/chats/status", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateChatStatus)))
 	mux.Handle("PATCH /v1/space-desk/chats/user", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateChatUser)))
@@ -95,6 +102,11 @@ func main() {
 	mux.Handle("POST /v1/space-desk/poll", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOnePoll)))
 	mux.Handle("POST /v1/space-desk/list", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateListMessage)))
 	mux.Handle("POST /v1/space-desk/location", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateLocationRequestMessage)))
+
+	mux.Handle("POST /v1/space-desk/phone-config", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreatePhoneConfig)))
+	mux.Handle("PATCH /v1/space-desk/phone-config", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdatePhoneConfig)))
+	mux.Handle("GET /v1/space-desk/phone-config", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllPhoneConfig)))
+	mux.Handle("DELETE /v1/space-desk/phone-config", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeletePhoneConfig)))
 
 	mux.HandleFunc("/v1/ws/space-desk", spacedesk.SpaceDeskWebSocketHandler)
 

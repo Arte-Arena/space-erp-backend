@@ -59,6 +59,7 @@ type ButtonInfo struct {
 }
 
 type SpaceDeskMessage struct {
+	User            string                    `json:"user" bson:"user"`
 	Type            string                    `json:"type" bson:"type"`
 	From            string                    `json:"from,omitempty" bson:"from,omitempty"`
 	To              string                    `json:"to,omitempty" bson:"to,omitempty"`
@@ -159,18 +160,15 @@ type SpaceDeskMessageText struct {
 }
 
 type SpaceDeskChatMetadata struct {
-	ID                bson.ObjectID   `json:"_id" bson:"_id,omitempty"`
-	Name              string          `json:"name" bson:"name"`
-	NickName          string          `json:"nick_name" bson:"nick_name"`
-	ClientPhoneNumber string          `json:"cliente_phone_number" bson:"cliente_phone_number"`
-	Description       string          `json:"description" bson:"description"`
-	Status            string          `json:"status" bson:"status"`
-	Type              string          `json:"type" bson:"type"`
-	GroupIds          []bson.ObjectID `json:"group_ids" bson:"group_ids"`
-	UserId            string          `json:"user_id" bson:"user_id"`
-	CreatedAt         time.Time       `json:"created_at" bson:"created_at"`
-	UpdatedAt         time.Time       `json:"updated_at" bson:"updated_at"`
-	LastMessage       time.Time       `json:"last_message_timestamp" bson:"last_message_timestamp"`
+	ID                bson.ObjectID `json:"_id" bson:"_id,omitempty"`
+	Name              string        `json:"name" bson:"name"`
+	ClientPhoneNumber string        `json:"cliente_phone_number" bson:"cliente_phone_number"`
+	Status            string        `json:"status" bson:"status"`
+	Closed            bool          `json:"closed" bson:"closed"`
+	Need_template     bool          `json:"need_template" bson:"need_template"`
+	CreatedAt         time.Time     `json:"created_at" bson:"created_at"`
+	UpdatedAt         time.Time     `json:"updated_at" bson:"updated_at"`
+	LastMessage       time.Time     `json:"last_message_timestamp" bson:"last_message_timestamp"`
 }
 
 type Group struct {
@@ -179,6 +177,7 @@ type Group struct {
 	Status string        `bson:"status" json:"status"`
 	Type   string        `bson:"type" json:"type"`
 	Chats  []string      `bson:"chats" json:"chats"`
+	Users  []string      `bson:"users" json:"users"`
 }
 
 type SpaceDeskStatus struct {
@@ -220,4 +219,28 @@ type StatusError struct {
 // StatusErrorData contém os detalhes específicos do erro.
 type StatusErrorData struct {
 	Details string `json:"details" bson:"details"`
+}
+
+// ------ Configurações ------
+
+type PhoneConfig struct {
+	Nome   string `bson:"nome" json:"nome"`
+	Numero string `bson:"numero" json:"numero"`
+	Status string `bson:"status" json:"status"`
+	Label  string `bson:"label" json:"label"`
+}
+
+type NotificationsConfig struct {
+	Email bool `bson:"email" json:"email"`
+	Push  bool `bson:"push" json:"push"`
+}
+
+type Settings struct {
+	ID            bson.ObjectID        `bson:"_id,omitempty" json:"id"`
+	Type          string               `bson:"type" json:"type"`
+	Phones        []PhoneConfig        `bson:"phones" json:"phones"`
+	Theme         string               `bson:"theme,omitempty" json:"theme,omitempty"`
+	Notifications *NotificationsConfig `bson:"notifications,omitempty" json:"notifications,omitempty"`
+	CreatedAt     time.Time            `bson:"createdAt" json:"createdAt"`
+	UpdatedAt     time.Time            `bson:"updatedAt" json:"updatedAt"`
 }
