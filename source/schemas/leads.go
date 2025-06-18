@@ -25,4 +25,5 @@ type Lead struct {
 	Notes          string          `json:"notes,omitempty" bson:"notes,omitempty"`
 	Responsible    bson.ObjectID   `json:"responsible,omitempty" bson:"responsible,omitempty"`
 	UnlinkClient   bool            `json:"unlink_client,omitempty" bson:"-"`
+	Blocked        bool            `json:"blocked,omitempty" bson:"blocked,omitempty"`
 }
