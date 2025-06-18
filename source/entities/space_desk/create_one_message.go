@@ -10,6 +10,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
+	"strconv"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -24,6 +26,24 @@ type CreateMessageRequest struct {
 	Type         string `json:"type"`
 	TemplateName string `json:"templateName"`
 	Params       any    `json:"params"`
+}
+
+func InterpolateTemplate(body string, values []string) string {
+	re := regexp.MustCompile(`\{\{(\d+)\}\}`)
+	return re.ReplaceAllStringFunc(body, func(placeholder string) string {
+		match := re.FindStringSubmatch(placeholder)
+		if len(match) > 1 {
+			idx, _ := strconv.Atoi(match[1])
+			if idx > 0 && idx <= len(values) {
+				return values[idx-1]
+			}
+		}
+		return ""
+	})
+}
+
+func ShouldSendAsTemplate(lastTimestamp time.Time) bool {
+	return time.Since(lastTimestamp) >= 24*time.Hour
 }
 
 func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +79,8 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 
 	colChats := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT_METADATA)
 	var chatDoc struct {
-		ClientePhoneNumber string `bson:"cliente_phone_number"`
+		ClientePhoneNumber string    `bson:"cliente_phone_number"`
+		LastMessage        time.Time `bson:"last_message_timestamp"`
 	}
 
 	objID, err := bson.ObjectIDFromHex(reqBody.To)
@@ -82,8 +103,33 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	// Usar o número do cliente como destinatário
 	recipient := chatDoc.ClientePhoneNumber
 
+	isTemplate := reqBody.Type == "template"
+	canSendTemplate := ShouldSendAsTemplate(chatDoc.LastMessage)
+
 	var payload map[string]any
-	if reqBody.Type == "template" {
+	if isTemplate && !canSendTemplate {
+		params, _ := reqBody.Params.([]interface{})
+		var values []string
+		for _, p := range params {
+			paramMap, ok := p.(map[string]interface{})
+			if ok {
+				if txt, ok := paramMap["text"].(string); ok {
+					values = append(values, txt)
+				}
+			}
+		}
+		interpolatedBody := InterpolateTemplate(reqBody.Body, values)
+
+		payload = map[string]any{
+			"messaging_product": "whatsapp",
+			"recipient_type":    "individual",
+			"to":                recipient,
+			"type":              "text",
+			"text": map[string]string{
+				"body": interpolatedBody,
+			},
+		}
+	} else if isTemplate && canSendTemplate {
 		payload = map[string]any{
 			"messaging_product": "whatsapp",
 			"to":                recipient,
