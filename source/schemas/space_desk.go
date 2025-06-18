@@ -171,11 +171,12 @@ type SpaceDeskChatMetadata struct {
 	ClientPhoneNumber string        `json:"cliente_phone_number" bson:"cliente_phone_number"`
 	Status            string        `json:"status" bson:"status"`
 	Closed            bool          `json:"closed" bson:"closed"`
-	Need_template     bool          `json:"need_template" bson:"need_template"`
+	NeedTemplate      bool          `json:"need_template" bson:"need_template"`
 	CreatedAt         time.Time     `json:"created_at" bson:"created_at"`
 	UpdatedAt         time.Time     `json:"updated_at" bson:"updated_at"`
 	LastMessage       time.Time     `json:"last_message_timestamp" bson:"last_message_timestamp"`
 	User              string        `json:"user_id" bson:"user_id"`
+	Blocked           bool          `json:"blocked,omitempty" bson:"blocked,omitempty"`
 }
 
 type Group struct {
