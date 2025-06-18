@@ -79,7 +79,13 @@ type SpaceDeskMessage struct {
 	Contacts        *[]SpaceDeskContact       `json:"contacts,omitempty" bson:"contacts,omitempty"`
 	LocationRequest *SpaceDeskLocationRequest `json:"location_request,omitempty" bson:"location_request,omitempty"`
 	Location        *SpaceDeskLocation        `json:"location,omitempty" bson:"location,omitempty"`
+	Reaction        *SpaceDeskReaction        `json:"reaction,omitempty" bson:"reaction,omitempty"`
 	Body            string                    `json:"body,omitempty" bson:"body,omitempty"`
+}
+
+type SpaceDeskReaction struct {
+	MessageID string `json:"message_id" bson:"message_id"`
+	Emoji     string `json:"emoji" bson:"emoji"`
 }
 
 type SpaceDeskLocationRequest struct {
@@ -169,6 +175,7 @@ type SpaceDeskChatMetadata struct {
 	CreatedAt         time.Time     `json:"created_at" bson:"created_at"`
 	UpdatedAt         time.Time     `json:"updated_at" bson:"updated_at"`
 	LastMessage       time.Time     `json:"last_message_timestamp" bson:"last_message_timestamp"`
+	User              string        `json:"user_id" bson:"user_id"`
 	Blocked           bool          `json:"blocked,omitempty" bson:"blocked,omitempty"`
 }
 
