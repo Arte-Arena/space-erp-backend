@@ -5,6 +5,7 @@ import (
 	"api/utils"
 	"context"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -16,8 +17,10 @@ import (
 )
 
 type UpdateChatStatusBody struct {
-	ID     string `json:"id"`     // pode ser _id do Mongo ou cliente_phone_number
-	Status string `json:"status"` // "active" ou "inactive"
+	ID           string `json:"id"` // pode ser _id do Mongo ou cliente_phone_number
+	Closed       bool   `json:"closed" bson:"closed"`
+	NeedTemplate bool   `json:"need_template" bson:"need_template"`
+	Blocked      *bool  `json:"blocked,omitempty"`
 }
 
 func UpdateChatStatus(w http.ResponseWriter, r *http.Request) {
@@ -26,15 +29,22 @@ func UpdateChatStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		utils.SendResponse(w, http.StatusBadRequest, "Erro ao ler o body", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
+		return
+	}
 	var body UpdateChatStatusBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	if err := json.Unmarshal(bodyBytes, &body); err != nil {
 		utils.SendResponse(w, http.StatusBadRequest, "JSON inválido", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
 		return
 	}
-	if body.ID == "" || body.Status == "" {
-		utils.SendResponse(w, http.StatusBadRequest, "Campos obrigatórios ausentes", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
+	if body.ID == "" {
+		utils.SendResponse(w, http.StatusBadRequest, "Campo 'id' obrigatório ausente", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
 		return
 	}
+	var raw map[string]any
+	_ = json.Unmarshal(bodyBytes, &raw)
 
 	ctx, cancel := context.WithTimeout(r.Context(), database.MONGO_TIMEOUT)
 	defer cancel()
@@ -53,12 +63,23 @@ func UpdateChatStatus(w http.ResponseWriter, r *http.Request) {
 	objectID, _ := bson.ObjectIDFromHex(body.ID)
 	filter := bson.M{"_id": objectID}
 
-	update := bson.M{
-		"$set": bson.M{
-			"status":     body.Status,
-			"updated_at": time.Now().UTC(),
-		},
+	updateFields := bson.M{
+		"updated_at": time.Now().UTC(),
 	}
+	if body.Blocked != nil {
+		updateFields["blocked"] = *body.Blocked
+	}
+	if _, ok := raw["closed"]; ok {
+		updateFields["closed"] = body.Closed
+	}
+	if _, ok := raw["need_template"]; ok {
+		updateFields["need_template"] = body.NeedTemplate
+	}
+	if len(updateFields) == 1 {
+		utils.SendResponse(w, http.StatusBadRequest, "Nenhum campo para atualizar foi fornecido", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
+		return
+	}
+	update := bson.M{"$set": updateFields}
 
 	res, err := collection.UpdateOne(ctx, filter, update)
 	if err != nil {
