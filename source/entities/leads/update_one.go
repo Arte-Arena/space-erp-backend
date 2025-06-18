@@ -92,6 +92,9 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 	if !lead.Responsible.IsZero() {
 		updateDoc = append(updateDoc, bson.E{Key: "responsible", Value: lead.Responsible})
 	}
+	if lead.Blocked {
+		updateDoc = append(updateDoc, bson.E{Key: "blocked", Value: lead.Blocked})
+	}
 
 	updateDoc = append(updateDoc, bson.E{Key: "updated_at", Value: time.Now()})
 
