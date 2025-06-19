@@ -21,8 +21,32 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
 
-	untilStr := r.URL.Query().Get("until")
+	query := r.URL.Query()
+	untilStr := query.Get("until")
+	limitStr := query.Get("limit")
+	pageStr := query.Get("page")
 
+	// Definindo valores padrão
+	limit := 20
+	page := 1
+
+	// Parse do "limit"
+	if limitParsed, err := strconv.Atoi(limitStr); err == nil && limitParsed > 0 {
+		if limitParsed > 100 {
+			limit = 100
+		} else {
+			limit = limitParsed
+		}
+	}
+
+	// Parse do "page"
+	if pageParsed, err := strconv.Atoi(pageStr); err == nil && pageParsed > 0 {
+		page = pageParsed
+	}
+
+	skip := (page - 1) * limit
+
+	// Parse do "until"
 	minTimestamp := int64(0)
 	if untilStr != "" {
 		if untilDays, err := strconv.Atoi(untilStr); err == nil && untilDays > 0 {
@@ -46,7 +70,11 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 		filter["created_at"] = bson.M{"$gte": time.Unix(minTimestamp, 0)}
 	}
 
-	findOptions := options.Find().SetSort(bson.D{{Key: "_id", Value: -1}})
+	findOptions := options.Find().
+		SetSort(bson.D{{Key: "_id", Value: -1}}).
+		SetSkip(int64(skip)).
+		SetLimit(int64(limit))
+
 	cursor, err := collection.Find(ctx, filter, findOptions)
 	if err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_LEADS_IN_MONGODB)
@@ -63,7 +91,7 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		//Atualiza o status do chat caso tenha mais de 24 horas
+		// Atualiza o status do chat caso tenha mais de 24 horas
 		if !chat.LastMessage.IsZero() && chat.LastMessage.Before(twentyFourHoursAgo) {
 			if !chat.NeedTemplate {
 				chat.NeedTemplate = true
@@ -86,8 +114,9 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 				}
 			}(chat.ID, updateFilter, updateData)
 		}
+
 		chats = append(chats, chat)
 	}
 
-	utils.SendResponse(w, http.StatusOK, "", chats, 0)
+	utils.SendResponse(w, http.StatusOK, "Chats encontrados com sucesso", chats, 0)
 }
