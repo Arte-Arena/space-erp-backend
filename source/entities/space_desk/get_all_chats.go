@@ -120,3 +120,4 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 
 	utils.SendResponse(w, http.StatusOK, "Chats encontrados com sucesso", chats, 0)
 }
+// GET /api/chats?limit=10&page=2&until=30
