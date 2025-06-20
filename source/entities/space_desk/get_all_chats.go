@@ -27,7 +27,7 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 	pageStr := query.Get("page")
 
 	// Definindo valores padrão
-	limit := 20
+	limit := 100
 	page := 1
 
 	// Parse do "limit"
@@ -105,14 +105,10 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 				},
 			}
 
-			go func(chatId bson.ObjectID, filter, data bson.M) {
-				updateCtx, updateCancel := context.WithTimeout(context.Background(), 15*time.Second)
-				defer updateCancel()
-				_, err := collection.UpdateOne(updateCtx, filter, data)
-				if err != nil {
-					log.Printf("Erro ao tentar encerrar o chat %s: %v", chatId.Hex(), err)
-				}
-			}(chat.ID, updateFilter, updateData)
+			_, err := collection.UpdateOne(ctx, updateFilter, updateData)
+			if err != nil {
+				log.Printf("Erro ao tentar encerrar o chat %s: %v", chat.ID.Hex(), err)
+			}
 		}
 
 		chats = append(chats, chat)
@@ -120,4 +116,5 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 
 	utils.SendResponse(w, http.StatusOK, "Chats encontrados com sucesso", chats, 0)
 }
+
 // GET /api/chats?limit=10&page=2&until=30
