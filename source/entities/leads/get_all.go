@@ -99,6 +99,11 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 			{Key: "responsible", Value: "$responsible_data"},
 			{Key: "related_client", Value: "$related_client_data"},
 		}}},
+		{{Key: "$addFields", Value: bson.D{
+			{Key: "tier", Value: bson.D{
+				{Key: "$ifNull", Value: bson.A{"$tier", ""}},
+			}},
+		}}},
 		{{Key: "$project", Value: bson.D{
 			{Key: "responsible_data", Value: 0},
 			{Key: "related_client_data", Value: 0},
