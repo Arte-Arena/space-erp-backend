@@ -65,6 +65,7 @@ func main() {
 	mux.Handle("GET /v1/space-desk/chats", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllChats)))
 	mux.Handle("GET /v1/space-desk/messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllMessages)))
 	mux.Handle("GET /v1/space-desk/status", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllStatuses)))
+	mux.Handle("GET /v1/space-desk/service-queue", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetServiceQueue)))
 
 	mux.Handle("POST /v1/space-desk/webhook-whatsapp", http.HandlerFunc(spacedesk.CreateOneWebhookWhatsapp))
 
