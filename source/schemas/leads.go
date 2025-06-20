@@ -26,4 +26,5 @@ type Lead struct {
 	Responsible    bson.ObjectID   `json:"responsible,omitempty" bson:"responsible,omitempty"`
 	UnlinkClient   bool            `json:"unlink_client,omitempty" bson:"-"`
 	Blocked        bool            `json:"blocked,omitempty" bson:"blocked,omitempty"`
+	Tier           string          `json:"tier,omitempty" bson:"tier,omitempty"`
 }
