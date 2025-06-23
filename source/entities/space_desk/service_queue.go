@@ -58,8 +58,8 @@ func GetServiceQueue(w http.ResponseWriter, r *http.Request) {
 	chatCol := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT_METADATA)
 	eventsCol := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_EVENTS_WHATSAPP)
 
-	findOpts := options.Find().SetSort(bson.D{{Key: "last_message_timestamp", Value: -1}}).SetSkip(int64(skip)).SetLimit(int64(limit))
-	filter := bson.M{}
+	findOpts := options.Find().SetSort(bson.D{{Key: "last_message_timestamp", Value: 1}}).SetSkip(int64(skip)).SetLimit(int64(limit))
+	filter := bson.M{"closed": false}
 	if minTimestamp > 0 {
 		filter["last_message_timestamp"] = bson.M{"$gte": time.Unix(minTimestamp, 0)}
 	}

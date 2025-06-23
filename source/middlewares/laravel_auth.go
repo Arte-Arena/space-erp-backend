@@ -21,7 +21,7 @@ type LaravelUser struct {
 
 func LaravelAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if os.Getenv(utils.ENV) == utils.ENV_DEVELOPMENT {
+		if os.Getenv(utils.ENV) == utils.ENV_DEVELOPMENT || os.Getenv(utils.ENV) == utils.ENV_RELEASE {
 			next.ServeHTTP(w, r)
 			return
 		}
