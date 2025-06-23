@@ -81,7 +81,13 @@ func GetServiceQueue(w http.ResponseWriter, r *http.Request) {
 		lastMsgUser := ""
 		lastMsgFrom := ""
 
-		eventFilter := bson.M{"entry.changes.value.messages.to": chat.ClientPhoneNumber}
+		eventFilter := bson.M{
+			"$or": []bson.M{
+				{"entry.changes.value.contacts.wa_id": chat.ClientPhoneNumber},
+				{"entry.changes.value.messages.to": chat.ID.Hex()},
+			},
+		}
+
 		findEventOpts := options.FindOne().SetSort(bson.D{{Key: "entry.changes.value.messages.timestamp", Value: -1}})
 		event := schemas.SpaceDeskMessageEvent{}
 		err := eventsCol.FindOne(ctx, eventFilter, findEventOpts).Decode(&event)
