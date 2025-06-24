@@ -158,6 +158,10 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 
 	broadcastSpaceDeskMessage(event)
 
+	if statusesArr, ok := value["statuses"].([]any); ok && len(statusesArr) > 0 {
+		broadcastSpaceDeskMessage(map[string]any{"statuses": statusesArr})
+	}
+
 	chatMetadataID := bson.ObjectID{}
 	if updateResult.UpsertedID != nil {
 		chatMetadataID = updateResult.UpsertedID.(bson.ObjectID)
