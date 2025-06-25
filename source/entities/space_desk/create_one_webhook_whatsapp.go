@@ -136,7 +136,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 			"updated_at":             updatedAt,
 			"last_message_timestamp": lastMessageTimestamp,
 			"last_message":           lastMessage,
-			"status":                 "active",
+			"need_template":          false,
 		},
 		"$setOnInsert": bson.M{
 			"nick_name":            "",
@@ -157,6 +157,10 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	broadcastSpaceDeskMessage(event)
+
+	if statusesArr, ok := value["statuses"].([]any); ok && len(statusesArr) > 0 {
+		broadcastSpaceDeskMessage(map[string]any{"statuses": statusesArr})
+	}
 
 	chatMetadataID := bson.ObjectID{}
 	if updateResult.UpsertedID != nil {
