@@ -44,6 +44,8 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	broadcastSpaceDeskMessage(event)
+
 	collection2 := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT_METADATA)
 
 	entryArr, ok := event["entry"].([]interface{})
@@ -154,12 +156,6 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_INSERT_SPACE_DESK_CHAT_METADATA_TO_MONGODB)
 		return
-	}
-
-	broadcastSpaceDeskMessage(event)
-
-	if statusesArr, ok := value["statuses"].([]any); ok && len(statusesArr) > 0 {
-		broadcastSpaceDeskMessage(map[string]any{"statuses": statusesArr})
 	}
 
 	chatMetadataID := bson.ObjectID{}
