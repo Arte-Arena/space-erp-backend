@@ -30,6 +30,11 @@ func CreateOneTier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if tier.SumType != "individual" && tier.SumType != "total" {
+		utils.SendResponse(w, http.StatusBadRequest, "sum_type deve ser 'individual' ou 'total'", nil, 0)
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
 

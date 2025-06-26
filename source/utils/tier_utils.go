@@ -4,7 +4,6 @@ import (
 	"api/schemas"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
@@ -31,7 +30,6 @@ func CalculateLeadTier(relatedOrders bson.A, tiers []schemas.LeadTier) (any, err
 				orderMap[elem.Key] = elem.Value
 			}
 		default:
-			log.Printf("orderDoc type: %T, value: %#v\n", orderDoc, orderDoc)
 			return nil, fmt.Errorf("orderDoc at index %d is not a map", i)
 		}
 		productsListLegacy, ok := orderMap["products_list_legacy"].(string)
@@ -52,7 +50,6 @@ func CalculateLeadTier(relatedOrders bson.A, tiers []schemas.LeadTier) (any, err
 		}
 	}
 
-	log.Printf("[DEBUG] totalValue: %v, maxValue: %v\n", totalValue, maxValue)
 	for _, tier := range tiers {
 		var valueToCompare float64
 		switch tier.SumType {
