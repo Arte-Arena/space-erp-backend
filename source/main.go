@@ -43,6 +43,10 @@ func main() {
 	mux.Handle("GET /v1/leads/{id}", middlewares.LaravelAuth(http.HandlerFunc(leads.GetOne)))
 	mux.Handle("POST /v1/leads", middlewares.LaravelAuth(http.HandlerFunc(leads.CreateOne)))
 	mux.Handle("PATCH /v1/leads/{id}", middlewares.LaravelAuth(http.HandlerFunc(leads.UpdateOne)))
+	mux.Handle("GET /v1/leads/tiers", middlewares.LaravelAuth(http.HandlerFunc(leads.GetAllTiers)))
+	mux.Handle("GET /v1/leads/tiers/{id}", middlewares.LaravelAuth(http.HandlerFunc(leads.GetOneTier)))
+	mux.Handle("POST /v1/leads/tiers", middlewares.LaravelAuth(http.HandlerFunc(leads.CreateOneTier)))
+	mux.Handle("PATCH /v1/leads/tiers/{id}", middlewares.LaravelAuth(http.HandlerFunc(leads.UpdateOneTier)))
 
 	mux.Handle("GET /v1/clients", middlewares.LaravelAuth(http.HandlerFunc(clients.GetAll)))
 	mux.Handle("GET /v1/clients/{id}", middlewares.LaravelAuth(http.HandlerFunc(clients.GetOne)))
