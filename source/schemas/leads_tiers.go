@@ -12,6 +12,7 @@ type LeadTier struct {
 	MinValue  float64       `json:"min_value" bson:"min_value"`
 	MaxValue  float64       `json:"max_value" bson:"max_value"`
 	Icon      string        `json:"icon" bson:"icon"`
+	SumType   string        `json:"sum_type" bson:"sum_type"`
 	CreatedAt time.Time     `json:"created_at" bson:"created_at"`
 	UpdatedAt time.Time     `json:"updated_at" bson:"updated_at"`
 }
