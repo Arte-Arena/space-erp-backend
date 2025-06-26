@@ -27,14 +27,3 @@ type Lead struct {
 	UnlinkClient   bool            `json:"unlink_client,omitempty" bson:"-"`
 	Blocked        bool            `json:"blocked,omitempty" bson:"blocked,omitempty"`
 }
-
-type LeadTier struct {
-	ID        bson.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	Label     string        `json:"label" bson:"label"`
-	MinValue  float64       `json:"min_value" bson:"min_value"`
-	MaxValue  float64       `json:"max_value" bson:"max_value"`
-	Icon      string        `json:"icon" bson:"icon"`
-	SumType   string        `json:"sum_type" bson:"sum_type"`
-	CreatedAt time.Time     `json:"created_at" bson:"created_at"`
-	UpdatedAt time.Time     `json:"updated_at" bson:"updated_at"`
-}

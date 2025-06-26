@@ -9,6 +9,7 @@ import (
 const (
 	MONGO_TIMEOUT                         = 20 * time.Second
 	COLLECTION_LEADS                      = "leads"
+	COLLECTION_LEADS_TIERS                = "leads_tiers"
 	COLLECTION_FUNNELS                    = "funnels"
 	COLLECTION_BUDGETS                    = "budgets"
 	COLLECTION_ORDERS                     = "orders"
