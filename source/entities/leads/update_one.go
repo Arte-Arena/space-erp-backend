@@ -96,10 +96,6 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 		updateDoc = append(updateDoc, bson.E{Key: "blocked", Value: lead.Blocked})
 	}
 
-	if !lead.RelatedTier.IsZero() {
-		updateDoc = append(updateDoc, bson.E{Key: "related_tier", Value: lead.RelatedTier})
-	}
-
 	updateDoc = append(updateDoc, bson.E{Key: "updated_at", Value: time.Now()})
 
 	if len(updateDoc) == 0 {

@@ -26,7 +26,7 @@ func GetAllTiers(w http.ResponseWriter, r *http.Request) {
 	}
 	defer mongoClient.Disconnect(ctx)
 
-	collection := mongoClient.Database(database.GetDB()).Collection("lead_tiers")
+	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_LEADS_TIERS)
 
 	cursor, err := collection.Find(ctx, bson.D{})
 	if err != nil {

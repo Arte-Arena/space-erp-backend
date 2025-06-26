@@ -42,7 +42,7 @@ func CreateOneTier(w http.ResponseWriter, r *http.Request) {
 	}
 	defer mongoClient.Disconnect(ctx)
 
-	collection := mongoClient.Database(database.GetDB()).Collection("lead_tiers")
+	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_LEADS_TIERS)
 
 	labelFilter := bson.D{{Key: "label", Value: bson.D{{Key: "$regex", Value: "^" + strings.ReplaceAll(tier.Label, " ", "") + "$"}, {Key: "$options", Value: "i"}}}}
 	cursor, err := collection.Find(ctx, labelFilter)

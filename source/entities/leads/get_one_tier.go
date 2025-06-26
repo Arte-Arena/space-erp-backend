@@ -33,7 +33,7 @@ func GetOneTier(w http.ResponseWriter, r *http.Request) {
 	}
 	defer mongoClient.Disconnect(ctx)
 
-	collection := mongoClient.Database(database.GetDB()).Collection("lead_tiers")
+	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_LEADS_TIERS)
 
 	var tier schemas.LeadTier
 	err = collection.FindOne(ctx, bson.M{"_id": id}).Decode(&tier)
