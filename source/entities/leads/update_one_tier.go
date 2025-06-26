@@ -33,6 +33,11 @@ func UpdateOneTier(w http.ResponseWriter, r *http.Request) {
 
 	tier.Label = strings.TrimSpace(tier.Label)
 
+	if tier.SumType != "" && tier.SumType != "individual" && tier.SumType != "total" {
+		utils.SendResponse(w, http.StatusBadRequest, "sum_type deve ser 'individual' ou 'total'", nil, 0)
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
 
@@ -98,6 +103,9 @@ func UpdateOneTier(w http.ResponseWriter, r *http.Request) {
 	}
 	if tier.Icon != "" {
 		updateDoc = append(updateDoc, bson.E{Key: "icon", Value: tier.Icon})
+	}
+	if tier.SumType != "" {
+		updateDoc = append(updateDoc, bson.E{Key: "sum_type", Value: tier.SumType})
 	}
 	updateDoc = append(updateDoc, bson.E{Key: "updated_at", Value: time.Now()})
 
