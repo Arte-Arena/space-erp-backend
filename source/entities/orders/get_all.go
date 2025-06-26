@@ -158,7 +158,10 @@ func buildFilterFromQueryParams(r *http.Request) bson.D {
 	}
 
 	if tinyNumber := queryParams.Get("tiny_number"); tinyNumber != "" {
-		filter = append(filter, bson.E{Key: "tiny.number", Value: bson.D{{Key: "$regex", Value: tinyNumber}, {Key: "$options", Value: "i"}}})
+		filter = append(filter, bson.E{Key: "$or", Value: bson.A{
+			bson.D{{Key: "tiny.number", Value: bson.D{{Key: "$regex", Value: tinyNumber}, {Key: "$options", Value: "i"}}}},
+			bson.D{{Key: "tiny.numero", Value: bson.D{{Key: "$regex", Value: tinyNumber}, {Key: "$options", Value: "i"}}}},
+		}})
 	}
 
 	objectIDFields := map[string]string{
