@@ -141,7 +141,12 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 
 	for i, lead := range leads {
 		if relatedOrders, ok := lead["related_orders"].(bson.A); ok {
-			leads[i]["tier"] = utils.CalculateLeadTier(relatedOrders, tiers)
+			tier, err := utils.CalculateLeadTier(relatedOrders, tiers)
+			if err != nil {
+				utils.SendResponse(w, http.StatusInternalServerError, err.Error(), nil, 0)
+				return
+			}
+			leads[i]["tier"] = tier
 		} else {
 			utils.SendResponse(w, http.StatusInternalServerError, "Erro ao processar JSON dos pedidos relacionados do lead", nil, 0)
 			return

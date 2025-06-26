@@ -3,6 +3,8 @@ package utils
 import (
 	"api/schemas"
 	"encoding/json"
+	"fmt"
+	"log"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
@@ -12,42 +14,58 @@ type ProductInLegacyList struct {
 	Quantidade float64 `json:"quantidade"`
 }
 
-func CalculateLeadTier(relatedOrders bson.A, tiers []schemas.LeadTier) any {
+func CalculateLeadTier(relatedOrders bson.A, tiers []schemas.LeadTier) (any, error) {
 	totalValue := 0.0
 	maxValue := 0.0
 
-	for _, orderDoc := range relatedOrders {
-		orderMap, ok := orderDoc.(bson.M)
-		if !ok {
-			continue
-		}
-		if productsListLegacy, ok := orderMap["products_list_legacy"].(string); ok && productsListLegacy != "" {
-			products := []ProductInLegacyList{}
-			if err := json.Unmarshal([]byte(productsListLegacy), &products); err == nil {
-				currentOrderValue := 0.0
-				for _, p := range products {
-					currentOrderValue += p.Preco * p.Quantidade
-				}
-				totalValue += currentOrderValue
-				if currentOrderValue > maxValue {
-					maxValue = currentOrderValue
-				}
+	for i, orderDoc := range relatedOrders {
+		var orderMap map[string]any
+		switch v := orderDoc.(type) {
+		case bson.M:
+			orderMap = v
+		case map[string]any:
+			orderMap = v
+		case bson.D:
+			orderMap = make(map[string]any)
+			for _, elem := range v {
+				orderMap[elem.Key] = elem.Value
 			}
+		default:
+			log.Printf("orderDoc type: %T, value: %#v\n", orderDoc, orderDoc)
+			return nil, fmt.Errorf("orderDoc at index %d is not a map", i)
+		}
+		productsListLegacy, ok := orderMap["products_list_legacy"].(string)
+		if !ok || productsListLegacy == "" {
+			return nil, fmt.Errorf("order at index %d missing or empty products_list_legacy", i)
+		}
+		products := []ProductInLegacyList{}
+		if err := json.Unmarshal([]byte(productsListLegacy), &products); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal products_list_legacy at index %d: %w", i, err)
+		}
+		currentOrderValue := 0.0
+		for _, p := range products {
+			currentOrderValue += p.Preco * p.Quantidade
+		}
+		totalValue += currentOrderValue
+		if currentOrderValue > maxValue {
+			maxValue = currentOrderValue
 		}
 	}
 
+	log.Printf("[DEBUG] totalValue: %v, maxValue: %v\n", totalValue, maxValue)
 	for _, tier := range tiers {
 		var valueToCompare float64
-		if tier.SumType == "total_value" {
+		switch tier.SumType {
+		case "total":
 			valueToCompare = totalValue
-		} else if tier.SumType == "max_value" {
+		case "individual":
 			valueToCompare = maxValue
-		} else {
-			continue
+		default:
+			return nil, fmt.Errorf("invalid SumType in tier: %s", tier.SumType)
 		}
 		if valueToCompare >= tier.MinValue && valueToCompare <= tier.MaxValue {
-			return tier
+			return tier, nil
 		}
 	}
-	return nil
+	return nil, fmt.Errorf("no matching tier found for the calculated values")
 }
