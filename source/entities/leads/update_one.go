@@ -96,12 +96,8 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 		updateDoc = append(updateDoc, bson.E{Key: "blocked", Value: lead.Blocked})
 	}
 
-	if lead.Tier != "" {
-		if lead.Tier != "Premium" && lead.Tier != "Prata" && lead.Tier != "Bronze" {
-			utils.SendResponse(w, http.StatusBadRequest, "Valor inválido para o campo tier. Aceito apenas: Premium, Prata ou Bronze.", nil, 0)
-			return
-		}
-		updateDoc = append(updateDoc, bson.E{Key: "tier", Value: lead.Tier})
+	if !lead.RelatedTier.IsZero() {
+		updateDoc = append(updateDoc, bson.E{Key: "related_tier", Value: lead.RelatedTier})
 	}
 
 	updateDoc = append(updateDoc, bson.E{Key: "updated_at", Value: time.Now()})
