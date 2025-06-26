@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"api/schemas"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -105,6 +107,32 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result := results[0]
+
+	tiersCollection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_LEADS_TIERS)
+	tiersCursor, err := tiersCollection.Find(ctx, bson.D{})
+	if err != nil {
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_LEAD_BY_ID_IN_MONGODB)
+		return
+	}
+	defer tiersCursor.Close(ctx)
+
+	tiers := []schemas.LeadTier{}
+	if err = tiersCursor.All(ctx, &tiers); err != nil {
+		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao processar os pedidos relacionados do lead", nil, 0)
+		return
+	}
+
+	if relatedOrders, ok := result["related_orders"].(bson.A); ok {
+		tier, err := utils.CalculateLeadTier(relatedOrders, tiers)
+		if err != nil {
+			utils.SendResponse(w, http.StatusInternalServerError, err.Error(), nil, 0)
+			return
+		}
+		result["tier"] = tier
+	} else {
+		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao processar JSON do pedido relacionado do lead", nil, 0)
+		return
+	}
 
 	utils.SendResponse(w, http.StatusOK, "", result, 0)
 }

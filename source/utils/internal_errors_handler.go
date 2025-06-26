@@ -53,6 +53,7 @@ const (
 	NOT_FOUND
 	NOT_AUTHORIZED
 	LIMIT_REACHED
+	CANNOT_FIND_LEADS_TIERS_IN_MONGODB
 )
 
 func SendInternalError(internalErrorCode int) string {

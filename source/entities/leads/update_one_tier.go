@@ -45,7 +45,7 @@ func UpdateOneTier(w http.ResponseWriter, r *http.Request) {
 	}
 	defer mongoClient.Disconnect(ctx)
 
-	collection := mongoClient.Database(database.GetDB()).Collection("lead_tiers")
+	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_LEADS_TIERS)
 
 	if tier.Label != "" {
 		labelFilter := bson.D{
