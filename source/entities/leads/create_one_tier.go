@@ -30,6 +30,11 @@ func CreateOneTier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if tier.SumType != "individual" && tier.SumType != "total" {
+		utils.SendResponse(w, http.StatusBadRequest, "sum_type deve ser 'individual' ou 'total'", nil, 0)
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
 
@@ -42,7 +47,7 @@ func CreateOneTier(w http.ResponseWriter, r *http.Request) {
 	}
 	defer mongoClient.Disconnect(ctx)
 
-	collection := mongoClient.Database(database.GetDB()).Collection("lead_tiers")
+	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_LEADS_TIERS)
 
 	labelFilter := bson.D{{Key: "label", Value: bson.D{{Key: "$regex", Value: "^" + strings.ReplaceAll(tier.Label, " ", "") + "$"}, {Key: "$options", Value: "i"}}}}
 	cursor, err := collection.Find(ctx, labelFilter)
