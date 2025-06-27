@@ -151,6 +151,15 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 			utils.SendResponse(w, http.StatusInternalServerError, "Erro ao processar JSON dos pedidos relacionados do lead", nil, 0)
 			return
 		}
+		if r.URL.Query().Get("allow_funnels") == "true" {
+			funnelName, stageName, err := getLeadCurrentFunnelAndStageForMany(ctx, mongoClient, database.GetDB(), lead["_id"])
+			if err != nil {
+				utils.SendResponse(w, http.StatusInternalServerError, "Erro ao buscar funil/etapa do lead", nil, 0)
+				return
+			}
+			leads[i]["current_funnel"] = funnelName
+			leads[i]["current_stage"] = stageName
+		}
 	}
 
 	response := map[string]any{
@@ -242,4 +251,36 @@ func buildFilterFromQueryParams(r *http.Request) bson.D {
 	}
 
 	return filter
+}
+
+func getLeadCurrentFunnelAndStageForMany(ctx context.Context, mongoClient *mongo.Client, dbName string, leadID any) (funnelName string, stageName string, err error) {
+	funnelsCollection := mongoClient.Database(dbName).Collection(database.COLLECTION_FUNNELS)
+	pipeline := mongo.Pipeline{
+		{{Key: "$unwind", Value: "$stages"}},
+		{{Key: "$match", Value: bson.D{{Key: "stages.related_leads", Value: leadID}}}},
+		{{Key: "$limit", Value: 1}},
+		{{Key: "$project", Value: bson.D{
+			{Key: "funnelName", Value: "$name"},
+			{Key: "stageName", Value: "$stages.name"},
+			{Key: "_id", Value: 0},
+		}}},
+	}
+	cursor, err := funnelsCollection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return "", "", err
+	}
+	defer cursor.Close(ctx)
+
+	if cursor.Next(ctx) {
+		var result struct {
+			FunnelName string `bson:"funnelName"`
+			StageName  string `bson:"stageName"`
+		}
+		if err := cursor.Decode(&result); err != nil {
+			return "", "", err
+		}
+		return result.FunnelName, result.StageName, nil
+	}
+
+	return "", "", nil
 }
