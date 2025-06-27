@@ -35,7 +35,7 @@ func GetOneTier(w http.ResponseWriter, r *http.Request) {
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_LEADS_TIERS)
 
-	var tier schemas.LeadTier
+	tier := schemas.LeadTier{}
 	err = collection.FindOne(ctx, bson.M{"_id": id}).Decode(&tier)
 	if err != nil {
 		utils.SendResponse(w, http.StatusNotFound, "Tier não encontrado", nil, 0)
