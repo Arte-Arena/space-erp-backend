@@ -123,12 +123,14 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if relatedOrders, ok := result["related_orders"].(bson.A); ok {
-		tier, err := utils.CalculateLeadTier(relatedOrders, tiers)
-		if err != nil {
-			utils.SendResponse(w, http.StatusInternalServerError, err.Error(), nil, 0)
-			return
+		if len(relatedOrders) > 0 {
+			tier, err := utils.CalculateLeadTier(relatedOrders, tiers)
+			if err != nil {
+				utils.SendResponse(w, http.StatusInternalServerError, err.Error(), nil, 0)
+				return
+			}
+			result["tier"] = tier
 		}
-		result["tier"] = tier
 	} else {
 		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao processar JSON do pedido relacionado do lead", nil, 0)
 		return
