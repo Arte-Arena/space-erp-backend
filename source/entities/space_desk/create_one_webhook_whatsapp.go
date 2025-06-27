@@ -73,6 +73,19 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
 		return
 	}
+
+	metadata, ok := value["metadata"].(map[string]interface{})
+	if !ok {
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+
+	companyPhoneNumber, ok := metadata["display_phone_number"].(string)
+	if !ok {
+		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
+		return
+	}
+
 	contactsArr, ok := value["contacts"].([]interface{})
 	if !ok || len(contactsArr) == 0 {
 		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.CANNOT_INSERT_SPACE_DESK_EVENT_TO_MONGODB)
@@ -139,6 +152,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 			"last_message_timestamp": lastMessageTimestamp,
 			"last_message":           lastMessage,
 			"need_template":          false,
+			"company_phone_number":   companyPhoneNumber,
 		},
 		"$setOnInsert": bson.M{
 			"nick_name":            "",

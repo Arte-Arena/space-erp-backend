@@ -209,17 +209,21 @@ func CreateOneMedia(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	broadcastSpaceDeskMessage(map[string]any{
+		"id": chatId,
 		"messages": []map[string]string{{
-			"id":  respData.Messages[0].ID,
-			"url": url,
+			"id":      respData.Messages[0].ID,
+			"mediaId": mediaId,
+			"url":     url,
 		}},
 	})
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"id": chatId,
 		"messages": []map[string]string{{
-			"id":  respData.Messages[0].ID,
-			"url": url,
+			"id":      respData.Messages[0].ID,
+			"mediaId": mediaId,
+			"url":     url,
 		}},
 	})
 }
