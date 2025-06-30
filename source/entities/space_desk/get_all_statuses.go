@@ -14,6 +14,15 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
+var statusPriority = map[string]int{
+	"sent":      1,
+	"delivered": 2,
+	"read":      3,
+	"seen":      3,
+	"failed":    99,
+	"error":     99,
+}
+
 func GetAllStatuses(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
@@ -76,16 +85,21 @@ func GetAllStatuses(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		// Deduplicação pelo id
 		idStr, ok := doc["id"].(string)
 		if !ok {
 			continue
 		}
-		// Só adiciona se ainda não tem no mapa
-		if _, found := uniqueStatuses[idStr]; !found {
+		statusStr, _ := doc["status"].(string)
+		priority := statusPriority[statusStr]
+		prev, found := uniqueStatuses[idStr]
+		if !found {
 			uniqueStatuses[idStr] = doc
+		} else {
+			prevPriority := statusPriority[prev["status"].(string)]
+			if priority >= prevPriority {
+				uniqueStatuses[idStr] = doc
+			}
 		}
-		// Se quiser sempre o último, faça: uniqueStatuses[idStr] = doc
 	}
 
 	for _, status := range uniqueStatuses {
