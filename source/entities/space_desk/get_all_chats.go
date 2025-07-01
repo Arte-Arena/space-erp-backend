@@ -17,12 +17,44 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
+func buildFilterFromQueryParams(r *http.Request) (bson.M, bool) {
+	query := r.URL.Query()
+	filter := bson.M{}
+
+	if name := query.Get("name"); name != "" {
+		filter["name"] = bson.M{"$regex": name, "$options": "i"}
+	}
+
+	if number := query.Get("number"); number != "" {
+		filter["cliente_phone_number"] = bson.M{"$regex": number, "$options": "i"}
+	}
+
+	if status := query.Get("status"); status != "" {
+		switch status {
+		case "closed":
+			filter["closed"] = true
+		case "opened":
+			filter["closed"] = false
+		default:
+			return nil, true
+		}
+	}
+
+	if untilStr := query.Get("until"); untilStr != "" {
+		if untilDays, err := strconv.Atoi(untilStr); err == nil && untilDays > 0 {
+			minTimestamp := time.Now().Add(-time.Duration(untilDays) * 24 * time.Hour)
+			filter["created_at"] = bson.M{"$gte": minTimestamp}
+		}
+	}
+
+	return filter, false
+}
+
 func GetAllChats(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
 
 	query := r.URL.Query()
-	untilStr := query.Get("until")
 	limitStr := query.Get("limit")
 	pageStr := query.Get("page")
 
@@ -46,14 +78,6 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 
 	skip := (page - 1) * limit
 
-	// Parse do "until"
-	minTimestamp := int64(0)
-	if untilStr != "" {
-		if untilDays, err := strconv.Atoi(untilStr); err == nil && untilDays > 0 {
-			minTimestamp = time.Now().Add(-time.Duration(untilDays) * 24 * time.Hour).Unix()
-		}
-	}
-
 	mongoURI := os.Getenv(utils.MONGODB_URI)
 	opts := options.Client().ApplyURI(mongoURI)
 	mongoClient, err := mongo.Connect(opts)
@@ -65,9 +89,10 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT_METADATA)
 
-	filter := bson.M{}
-	if minTimestamp > 0 {
-		filter["created_at"] = bson.M{"$gte": time.Unix(minTimestamp, 0)}
+	filter, hasError := buildFilterFromQueryParams(r)
+	if hasError {
+		utils.SendResponse(w, http.StatusBadRequest, "Parâmetro 'status' inválido. Use 'closed' ou 'opened'", nil, 0)
+		return
 	}
 
 	findOptions := options.Find().
