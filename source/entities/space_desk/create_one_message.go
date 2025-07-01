@@ -202,6 +202,11 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 
 	wamid := extractWamid(respMap)
 
+	if wamid == "not_returned" {
+		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao enviar mensagem: id não gerado. Verifique se a API D360 está funcionando corretamente.", nil, utils.ERROR_TO_SEND_MESSAGE)
+		return
+	}
+
 	now := time.Now().UTC()
 	raw := bson.M{
 		"entry": []any{
