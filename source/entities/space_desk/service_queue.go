@@ -72,7 +72,7 @@ func GetServiceQueue(w http.ResponseWriter, r *http.Request) {
 	chatCol := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT_METADATA)
 	eventsCol := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_EVENTS_WHATSAPP)
 
-	findOpts := options.Find().SetSort(bson.D{{Key: "last_message_timestamp", Value: 1}}).SetSkip(int64(skip)).SetLimit(int64(limit))
+	findOpts := options.Find().SetSort(bson.D{{Key: "last_message_timestamp", Value: -1}}).SetSkip(int64(skip)).SetLimit(int64(limit))
 	filter := buildServiceQueueFilterFromQueryParams(r)
 	cursor, err := chatCol.Find(ctx, filter, findOpts)
 	if err != nil {

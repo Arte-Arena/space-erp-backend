@@ -238,17 +238,20 @@ type PhoneConfig struct {
 	Label  string `bson:"label" json:"label"`
 }
 
-type NotificationsConfig struct {
-	Email bool `bson:"email" json:"email"`
-	Push  bool `bson:"push" json:"push"`
+type PixConfig struct {
+	Tipo   string `bson:"tipo" json:"tipo"`
+	Status string `bson:"status" json:"status"`
+	Nome   string `bson:"nome" json:"nome"`
+	Chave  string `bson:"chave" json:"chave"`
+	Banco  string `bson:"banco" json:"banco"`
 }
 
 type Settings struct {
-	ID            bson.ObjectID        `bson:"_id,omitempty" json:"id"`
-	Type          string               `bson:"type" json:"type"`
-	Phones        []PhoneConfig        `bson:"phones" json:"phones"`
-	Theme         string               `bson:"theme,omitempty" json:"theme,omitempty"`
-	Notifications *NotificationsConfig `bson:"notifications,omitempty" json:"notifications,omitempty"`
-	CreatedAt     time.Time            `bson:"createdAt" json:"createdAt"`
-	UpdatedAt     time.Time            `bson:"updatedAt" json:"updatedAt"`
+	ID        bson.ObjectID `bson:"_id,omitempty" json:"id"`
+	Type      string        `bson:"type" json:"type"`
+	Pix       []PixConfig   `bson:"pix" json:"pix"`
+	Phones    []PhoneConfig `bson:"phones" json:"phones"`
+	Theme     string        `bson:"theme,omitempty" json:"theme,omitempty"`
+	CreatedAt time.Time     `bson:"createdAt" json:"createdAt"`
+	UpdatedAt time.Time     `bson:"updatedAt" json:"updatedAt"`
 }

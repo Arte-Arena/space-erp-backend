@@ -113,6 +113,10 @@ func main() {
 	mux.Handle("GET /v1/space-desk/phone-config", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllPhoneConfig)))
 	mux.Handle("DELETE /v1/space-desk/phone-config", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeletePhoneConfig)))
 
+	mux.Handle("PUT /v1/space-desk/pix-config", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOrUpdatePixConfig)))
+	mux.Handle("GET /v1/space-desk/pix-config", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllPixConfig)))
+	mux.Handle("DELETE /v1/space-desk/pix-config", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeletePixConfig)))
+
 	mux.HandleFunc("/v1/ws/space-desk", spacedesk.SpaceDeskWebSocketHandler)
 
 	fmt.Printf("Servidor iniciado na porta %s às %s\n", os.Getenv(utils.PORT), time.Now().Format("2006-01-02 15:04:05"))
