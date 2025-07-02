@@ -54,6 +54,8 @@ const (
 	NOT_AUTHORIZED
 	LIMIT_REACHED
 	CANNOT_FIND_LEADS_TIERS_IN_MONGODB
+	METHOD_NOT_ALLOWED
+	ERROR_TO_QUERY_MONGODB
 )
 
 func SendInternalError(internalErrorCode int) string {
