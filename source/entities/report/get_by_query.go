@@ -33,57 +33,201 @@ func GetByQuery(w http.ResponseWriter, r *http.Request) {
 
 	_ = period
 
-	if reportType == schemas.REPORT_TYPE_CLIENTS {
-		clientsTotal := params.Get("clients_total")
-		clientsMonthlyAverage := params.Get("clients_monthly_average")
-		clientsConversionLessThirtyDays := params.Get("clients_conversion_less_thirty_days")
-		clientsTimeToClosePurchase := params.Get("clients_time_to_close_purchase")
-		clientsNewPerMonth := params.Get("clients_new_per_month")
+	responseData := map[string]any{}
 
-		_ = clientsTotal
-		_ = clientsMonthlyAverage
-		_ = clientsConversionLessThirtyDays
-		_ = clientsTimeToClosePurchase
-		_ = clientsNewPerMonth
+	var err error
+
+	handleErr := func(e error) bool {
+		if e != nil {
+			utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.ERROR_TO_FIND_IN_MONGODB)
+			return true
+		}
+		return false
+	}
+
+	if reportType == schemas.REPORT_TYPE_CLIENTS {
+		if _, ok := params["clients_total"]; ok {
+			var v int64
+			v, err = GetClientsTotal(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["clients_total"] = v
+		}
+
+		if _, ok := params["clients_monthly_average"]; ok {
+			var v float64
+			v, err = GetClientsMonthlyAverage(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["clients_monthly_average"] = v
+		}
+
+		if _, ok := params["clients_conversion_less_thirty_days"]; ok {
+			var v int64
+			v, err = GetClientsConversionLessThirtyDays(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["clients_conversion_less_thirty_days"] = v
+		}
+
+		if _, ok := params["clients_time_to_close_purchase"]; ok {
+			var v float64
+			v, err = GetClientsTimeToClosePurchase(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["clients_time_to_close_purchase"] = v
+		}
+
+		if _, ok := params["clients_new_per_month"]; ok {
+			var v map[string]int64
+			v, err = GetClientsNewPerMonth(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["clients_new_per_month"] = v
+		}
 	}
 
 	if reportType == schemas.REPORT_TYPE_BUDGETS {
-		budgetsConvertedSales := params.Get("budgets_converted_sales")
-		budgetsTotalSalesValue := params.Get("budgets_total_sales_value")
-		budgetsAverageTicket := params.Get("budgets_average_ticket")
-		budgetsMonthlySalesHistory := params.Get("budgets_monthly_sales_history")
-		budgetsSalesValueBySegment := params.Get("budgets_sales_value_by_segment")
+		if _, ok := params["budgets_converted_sales"]; ok {
+			var v int64
+			v, err = GetBudgetsConvertedSales(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["budgets_converted_sales"] = v
+		}
 
-		_ = budgetsConvertedSales
-		_ = budgetsTotalSalesValue
-		_ = budgetsAverageTicket
-		_ = budgetsMonthlySalesHistory
-		_ = budgetsSalesValueBySegment
+		if _, ok := params["budgets_total_sales_value"]; ok {
+			var v float64
+			v, err = GetBudgetsTotalSalesValue(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["budgets_total_sales_value"] = v
+		}
+
+		if _, ok := params["budgets_average_ticket"]; ok {
+			var v float64
+			v, err = GetBudgetsAverageTicket(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["budgets_average_ticket"] = v
+		}
+
+		if _, ok := params["budgets_monthly_sales_history"]; ok {
+			var v map[string]float64
+			v, err = GetBudgetsMonthlySalesHistory(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["budgets_monthly_sales_history"] = v
+		}
+
+		if _, ok := params["budgets_sales_value_by_segment"]; ok {
+			var v map[string]float64
+			v, err = GetBudgetsSalesValueBySegment(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["budgets_sales_value_by_segment"] = v
+		}
 	}
 
 	if reportType == schemas.REPORT_TYPE_LEADS {
-		leadsTotal := params.Get("leads_total")
-		leadsMonthlyAverage := params.Get("leads_monthly_average")
-		leadsConversionLessThirtyDays := params.Get("leads_conversion_less_thirty_days")
-		leadsTimeToClosePurchase := params.Get("leads_time_to_close_purchase")
-		leadsNewPerMonth := params.Get("leads_new_per_month")
+		if _, ok := params["leads_total"]; ok {
+			var v int64
+			v, err = GetLeadsTotal(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["leads_total"] = v
+		}
 
-		_ = leadsTotal
-		_ = leadsMonthlyAverage
-		_ = leadsConversionLessThirtyDays
-		_ = leadsTimeToClosePurchase
-		_ = leadsNewPerMonth
+		if _, ok := params["leads_monthly_average"]; ok {
+			var v float64
+			v, err = GetLeadsMonthlyAverage(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["leads_monthly_average"] = v
+		}
+
+		if _, ok := params["leads_conversion_less_thirty_days"]; ok {
+			var v int64
+			v, err = GetLeadsConversionLessThirtyDays(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["leads_conversion_less_thirty_days"] = v
+		}
+
+		if _, ok := params["leads_time_to_close_purchase"]; ok {
+			var v float64
+			v, err = GetLeadsTimeToClosePurchase(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["leads_time_to_close_purchase"] = v
+		}
+
+		if _, ok := params["leads_new_per_month"]; ok {
+			var v map[string]int64
+			v, err = GetLeadsNewPerMonth(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["leads_new_per_month"] = v
+		}
 	}
 
 	if reportType == schemas.REPORT_TYPE_ORDERS {
-		ordersTotal := params.Get("orders_total")
-		ordersMonthlyAverage := params.Get("orders_monthly_average")
-		ordersSalesValueByStatus := params.Get("orders_sales_value_by_status")
-		ordersSalesValueByType := params.Get("orders_sales_value_by_type")
+		if _, ok := params["orders_total"]; ok {
+			var v int64
+			v, err = GetOrdersTotal(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["orders_total"] = v
+		}
 
-		_ = ordersTotal
-		_ = ordersMonthlyAverage
-		_ = ordersSalesValueByStatus
-		_ = ordersSalesValueByType
+		if _, ok := params["orders_monthly_average"]; ok {
+			var v float64
+			v, err = GetOrdersMonthlyAverage(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["orders_monthly_average"] = v
+		}
+
+		if _, ok := params["orders_sales_value_by_status"]; ok {
+			var v map[string]float64
+			v, err = GetOrdersSalesValueByStatus(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["orders_sales_value_by_status"] = v
+		}
+
+		if _, ok := params["orders_sales_value_by_type"]; ok {
+			var v map[string]float64
+			v, err = GetOrdersSalesValueByType(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["orders_sales_value_by_type"] = v
+		}
 	}
+
+	if len(responseData) == 0 {
+		utils.SendResponse(w, http.StatusBadRequest, "Nenhum relatório selecionado", nil, 0)
+		return
+	}
+
+	utils.SendResponse(w, http.StatusOK, "", responseData, 0)
 }
