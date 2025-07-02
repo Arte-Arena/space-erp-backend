@@ -7,6 +7,7 @@ import (
 	funnelshistory "api/entities/funnels_history"
 	"api/entities/leads"
 	"api/entities/orders"
+	"api/entities/report"
 	spacedesk "api/entities/space_desk"
 	users "api/entities/users"
 	"api/middlewares"
@@ -61,7 +62,7 @@ func main() {
 	mux.Handle("GET /v1/orders", middlewares.LaravelAuth(http.HandlerFunc(orders.GetAll)))
 	mux.Handle("GET /v1/orders/{id}", middlewares.LaravelAuth(http.HandlerFunc(orders.GetOne)))
 
-	mux.Handle("GET /v1/reports", middlewares.LaravelAuth(http.HandlerFunc(leads.GetAll)))
+	mux.Handle("GET /v1/reports", middlewares.LaravelAuth(http.HandlerFunc(report.GetByQuery)))
 
 	mux.Handle("POST /v1/funnels_history", middlewares.LaravelAuth(http.HandlerFunc(funnelshistory.CreateOne)))
 	mux.Handle("GET /v1/funnels_history/{id}", middlewares.LaravelAuth(http.HandlerFunc(funnelshistory.GetAll)))
