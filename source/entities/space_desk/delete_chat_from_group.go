@@ -42,7 +42,7 @@ func DeleteChatFromGroup(w http.ResponseWriter, r *http.Request) {
 	defer client.Disconnect(ctx)
 
 	groupCol := client.Database(database.GetDB()).Collection("groups")
-	chatCol := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT_METADATA)
+	chatCol := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
 
 	// Remove o chat do grupo
 	_, err = groupCol.UpdateOne(
