@@ -68,12 +68,51 @@ func GetClientsNewPerMonth(from, until string) (map[string]int64, error) {
 		if err := cursor.Decode(&doc); err != nil {
 			continue
 		}
-		id, _ := doc["_id"].(bson.M)
-		year, _ := id["year"].(int32)
-		month, _ := id["month"].(int32)
-		count, _ := doc["count"].(int32)
-		key := fmt.Sprintf("%04d-%02d", year, month)
-		result[key] = int64(count)
+
+		idVal := doc["_id"]
+
+		castToInt32 := func(v any) int32 {
+			switch t := v.(type) {
+			case int32:
+				return t
+			case int64:
+				return int32(t)
+			case float64:
+				return int32(t)
+			default:
+				return 0
+			}
+		}
+
+		var year32, month32 int32
+		switch id := idVal.(type) {
+		case bson.M:
+			year32 = castToInt32(id["year"])
+			month32 = castToInt32(id["month"])
+		case bson.D:
+			for _, elem := range id {
+				if elem.Key == "year" {
+					year32 = castToInt32(elem.Value)
+				}
+				if elem.Key == "month" {
+					month32 = castToInt32(elem.Value)
+				}
+			}
+		}
+
+		countAny := doc["count"]
+		var count64 int64
+		switch c := countAny.(type) {
+		case int32:
+			count64 = int64(c)
+		case int64:
+			count64 = c
+		case float64:
+			count64 = int64(c)
+		}
+
+		key := fmt.Sprintf("%04d-%02d", year32, month32)
+		result[key] = count64
 	}
 	return result, nil
 }
