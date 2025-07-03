@@ -54,7 +54,7 @@ func CreateLocationRequestMessage(w http.ResponseWriter, r *http.Request) {
 	var chatDoc struct {
 		ClientePhoneNumber string `bson:"cliente_phone_number"`
 	}
-	col := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT_METADATA)
+	col := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
 	objID, err := bson.ObjectIDFromHex(req.To)
 	if err != nil {
 		utils.SendResponse(w, http.StatusBadRequest, "ID do chat inválido", nil, utils.INVALID_CHAT_ID_FORMAT)

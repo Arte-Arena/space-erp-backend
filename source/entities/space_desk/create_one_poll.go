@@ -58,7 +58,7 @@ func CreateOnePoll(w http.ResponseWriter, r *http.Request) {
 	}
 	defer dbClient.Disconnect(ctx)
 
-	colChats := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT_METADATA)
+	colChats := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
 	var chatDoc struct {
 		ClientePhoneNumber string `bson:"cliente_phone_number"`
 	}

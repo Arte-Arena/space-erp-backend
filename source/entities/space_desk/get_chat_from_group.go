@@ -39,7 +39,7 @@ func GetChatsByGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	defer client.Disconnect(ctx)
 
-	chatCol := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT_METADATA)
+	chatCol := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
 
 	filter := bson.M{"group_ids": groupObjID}
 	cursor, err := chatCol.Find(ctx, filter)

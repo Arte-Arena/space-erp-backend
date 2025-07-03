@@ -58,7 +58,7 @@ func UpdateChatStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	defer mongoClient.Disconnect(ctx)
 
-	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT_METADATA)
+	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
 
 	objectID, _ := bson.ObjectIDFromHex(body.ID)
 	filter := bson.M{"_id": objectID}
