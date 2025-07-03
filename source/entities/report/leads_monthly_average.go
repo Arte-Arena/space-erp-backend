@@ -3,6 +3,7 @@ package report
 import (
 	"api/database"
 	"context"
+	"math"
 	"os"
 	"time"
 
@@ -62,5 +63,7 @@ func GetLeadsMonthlyAverage(from, until string) (float64, error) {
 		months = 1
 	}
 
-	return float64(total) / months, nil
+	avg := float64(total) / months
+	avg = math.Round(avg*10) / 10
+	return avg, nil
 }
