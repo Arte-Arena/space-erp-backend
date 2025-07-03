@@ -57,6 +57,7 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	limitStr := query.Get("limit")
 	pageStr := query.Get("page")
+	numbers := query["numbers[]"]
 
 	// Definindo valores padrão
 	limit := 100
@@ -139,7 +140,24 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 		chats = append(chats, chat)
 	}
 
+	// Se numbers[] foi passado, filtra apenas os chats cujos números, só com dígitos, batem com algum
+	if len(numbers) > 0 {
+		numbersMap := make(map[string]bool)
+		for _, n := range numbers {
+			numbersMap[n] = true
+		}
+		filteredChats := make([]schemas.SpaceDeskChatMetadata, 0, len(chats))
+		for _, chat := range chats {
+			phoneDigits := onlyDigits(chat.ClientPhoneNumber)
+			if numbersMap[phoneDigits] {
+				filteredChats = append(filteredChats, chat)
+			}
+		}
+		chats = filteredChats
+	}
+
 	utils.SendResponse(w, http.StatusOK, "Chats encontrados com sucesso", chats, 0)
 }
 
 // GET /api/chats?limit=10&page=2&until=30
+// GET /api/chats?numbers[]=11999998888&numbers[]=65999998888
