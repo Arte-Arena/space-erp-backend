@@ -57,6 +57,15 @@ func GetLeadsMonthlyAverage(from, until string) (float64, error) {
 			years := untilTime.Year() - fromTime.Year()
 			months = float64(years*12 + int(untilTime.Month()) - int(fromTime.Month()) + 1)
 		}
+	} else if from == "" && until == "" {
+		var earliest struct {
+			CreatedAt time.Time `bson:"created_at"`
+		}
+		findOpts := options.FindOne().SetSort(bson.D{{Key: "created_at", Value: 1}}).SetProjection(bson.D{{Key: "created_at", Value: 1}})
+		if err := collection.FindOne(ctx, bson.D{}, findOpts).Decode(&earliest); err == nil && !earliest.CreatedAt.IsZero() {
+			years := time.Now().Year() - earliest.CreatedAt.Year()
+			months = float64(years*12 + int(time.Now().Month()) - int(earliest.CreatedAt.Month()) + 1)
+		}
 	}
 
 	if months <= 0 {
