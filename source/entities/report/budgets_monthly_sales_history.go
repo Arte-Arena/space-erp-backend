@@ -12,7 +12,6 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-// GetBudgetsMonthlySalesHistory returns a map where the key is "YYYY-MM" and the value is the sum of budgets' installment values for that month.
 func GetBudgetsMonthlySalesHistory(from, until string) (map[string]float64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
@@ -70,12 +69,50 @@ func GetBudgetsMonthlySalesHistory(from, until string) (map[string]float64, erro
 		if err := cursor.Decode(&doc); err != nil {
 			continue
 		}
-		id, _ := doc["_id"].(bson.M)
-		year, _ := id["year"].(int32)
-		month, _ := id["month"].(int32)
-		total, _ := doc["total_value"].(float64)
-		key := fmt.Sprintf("%04d-%02d", year, month)
-		result[key] = total
+
+		idVal := doc["_id"]
+
+		castToInt32 := func(v any) int32 {
+			switch t := v.(type) {
+			case int32:
+				return t
+			case int64:
+				return int32(t)
+			case float64:
+				return int32(t)
+			default:
+				return 0
+			}
+		}
+
+		var year32, month32 int32
+		switch id := idVal.(type) {
+		case bson.M:
+			year32 = castToInt32(id["year"])
+			month32 = castToInt32(id["month"])
+		case bson.D:
+			for _, elem := range id {
+				if elem.Key == "year" {
+					year32 = castToInt32(elem.Value)
+				}
+				if elem.Key == "month" {
+					month32 = castToInt32(elem.Value)
+				}
+			}
+		}
+
+		var totalFloat float64
+		switch tv := doc["total_value"].(type) {
+		case int32:
+			totalFloat = float64(tv)
+		case int64:
+			totalFloat = float64(tv)
+		case float64:
+			totalFloat = tv
+		}
+
+		key := fmt.Sprintf("%04d-%02d", year32, month32)
+		result[key] = totalFloat
 	}
 	return result, nil
 }
