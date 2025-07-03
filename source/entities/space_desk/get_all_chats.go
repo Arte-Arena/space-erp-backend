@@ -29,6 +29,26 @@ func buildFilterFromQueryParams(r *http.Request) (bson.M, bool) {
 		filter["cliente_phone_number"] = bson.M{"$regex": number, "$options": "i"}
 	}
 
+	if userId := query.Get("user_id"); userId != "" {
+		filter["user_id"] = userId
+	}
+
+	if ids, ok := query["ids[]"]; ok && len(ids) > 0 {
+		objectIDs := make([]bson.ObjectID, 0, len(ids))
+		for _, idStr := range ids {
+			objID, err := bson.ObjectIDFromHex(idStr)
+			if err == nil {
+				objectIDs = append(objectIDs, objID)
+			}
+		}
+		if len(objectIDs) > 0 {
+			filter["_id"] = bson.M{"$in": objectIDs}
+		} else {
+			// Se nenhum ID válido, forçar resultado vazio
+			filter["_id"] = bson.M{"$in": []bson.ObjectID{}}
+		}
+	}
+
 	if status := query.Get("status"); status != "" {
 		switch status {
 		case "closed":
