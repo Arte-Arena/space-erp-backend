@@ -106,6 +106,11 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 			log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
 		}
 
+		messageId, ok := statuses["id"].(string)
+		if !ok {
+			log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
+		}
+
 		clientPhoneNumber, ok = statuses["recipient_id"].(string)
 		if !ok {
 			log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
@@ -130,13 +135,13 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 
 		// Buscar o lastMessageId já gravado na collection de chat
 		var chatDoc struct {
-			LastMessageId string `bson:"last_message_id"`
-			Name          string `bson:"name"`
+			LastMessageIdFromClient string `bson:"last_message_id_from_client"`
+			Name                    string `bson:"name"`
 		}
 		err := collection_chat.FindOne(ctx, filter).Decode(&chatDoc)
 		lastMessageIdFromDB := ""
 		if err == nil {
-			lastMessageIdFromDB = chatDoc.LastMessageId
+			lastMessageIdFromDB = chatDoc.LastMessageIdFromClient
 			// Log do lastMessageId já gravado
 			fmt.Println("lastMessageId já gravado:", lastMessageIdFromDB)
 		}
@@ -164,6 +169,13 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Atualizar a collection de message
+
+		fmt.Println("------------------>>        passei pelo message para atualizar a collection de message")
+
+		collection_message := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_MESSAGE)
+
+		filter = bson.M{"message_id": messageId}
+
 		update := bson.M{
 			"$set": bson.M{
 				"updated_at": updatedAt,
@@ -171,10 +183,10 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 
-		updateOpts := options.UpdateOne().SetUpsert(true)
-		updateResult, err := collection_chat.UpdateOne(ctx, filter, update, updateOpts)
+		updateOpts := options.UpdateOne()
+		updateResult, err := collection_message.UpdateOne(ctx, filter, update, updateOpts)
 
-		log.Println("UpdateOne result (message):", updateResult)
+		log.Println("---------------->>>>>            UpdateOne result (message):", updateResult)
 
 		if err != nil {
 			log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
@@ -228,12 +240,12 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 
 		lastMessageTimestamp := time.Unix(lastMessageTimestampInt, 0)
 
-		var lastMessage string
+		var lastMessageFromClient string
 
 		if msgType, ok := messages["type"].(string); ok && msgType == "text" {
 			if textObj, ok := messages["text"].(map[string]interface{}); ok {
 				if body, ok := textObj["body"].(string); ok {
-					lastMessage = body
+					lastMessageFromClient = body
 				}
 			}
 		}
@@ -241,12 +253,12 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 		filter := bson.M{"cliente_phone_number": clientPhoneNumber, "company_phone_number": companyPhoneNumber}
 		update := bson.M{
 			"$set": bson.M{
-				"name":                   name,
-				"updated_at":             updatedAt,
-				"last_message_timestamp": lastMessageTimestamp,
-				"last_message_id":        messageId,
-				"last_message":           lastMessage,
-				"company_phone_number":   companyPhoneNumber,
+				"name":                        name,
+				"updated_at":                  updatedAt,
+				"last_message_timestamp":      lastMessageTimestamp,
+				"last_message_id_from_client": messageId,
+				"last_message_from_client":    lastMessageFromClient,
+				"company_phone_number":        companyPhoneNumber,
 			},
 			"$setOnInsert": bson.M{
 				"nick_name":            "",
@@ -267,6 +279,21 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 
 		collection_message := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_MESSAGE)
 
+		var chatId interface{}
+
+		if updateResult.UpsertedID != nil {
+			chatId = updateResult.UpsertedID
+		} else {
+			// Buscar o _id do chat pelo filtro (sempre vai achar se não foi upsert)
+			var metadata struct {
+				ID interface{} `bson:"_id"`
+			}
+			err := collection_chat.FindOne(ctx, filter).Decode(&metadata)
+			if err == nil {
+				chatId = metadata.ID
+			}
+		}
+
 		if textObj, ok := messages["text"].(map[string]interface{}); ok {
 			if body, ok := textObj["body"].(string); ok {
 
@@ -274,7 +301,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 
 				update = bson.M{
 					"$set": bson.M{
-						"chat_id":           updateResult.UpsertedID,
+						"chat_id":           chatId,
 						"type":              "text",
 						"message_timestamp": lastMessageTimestamp,
 						"message_id":        messageId,

@@ -74,6 +74,7 @@ func main() {
 
 	mux.Handle("POST /v1/space-desk/webhook-whatsapp", http.HandlerFunc(spacedesk.CreateOneWebhookWhatsapp))
 
+	mux.Handle("POST /v1/space-desk/chat", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneMessage)))
 	mux.Handle("POST /v1/space-desk/message", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneMessage)))
 	mux.Handle("POST /v1/space-desk/media", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneMedia)))
 
