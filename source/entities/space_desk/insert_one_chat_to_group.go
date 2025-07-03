@@ -51,7 +51,7 @@ func AddChatToGroup(w http.ResponseWriter, r *http.Request) {
 
 	db := client.Database(database.GetDB())
 	groupCol := db.Collection("groups")
-	chatCol := db.Collection(database.COLLECTION_SPACE_DESK_CHAT_METADATA)
+	chatCol := db.Collection(database.COLLECTION_SPACE_DESK_CHAT)
 
 	// Atualiza todos os grupos
 	for _, groupID := range groupObjIDs {

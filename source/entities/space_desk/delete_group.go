@@ -38,7 +38,7 @@ func DeleteGroup(w http.ResponseWriter, r *http.Request) {
 	defer client.Disconnect(ctx)
 
 	collection := client.Database(database.GetDB()).Collection("groups")
-	chatCol := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT_METADATA)
+	chatCol := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
 
 	// Remove the group
 	_, err = collection.DeleteOne(ctx, bson.M{"_id": objID})
@@ -57,7 +57,6 @@ func DeleteGroup(w http.ResponseWriter, r *http.Request) {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_DELETE_CHAT_FROM_SPACE_DESK_GROUP)
 		return
 	}
-
 
 	utils.SendResponse(w, http.StatusOK, "Group deleted and removed from all chats", nil, 0)
 }
