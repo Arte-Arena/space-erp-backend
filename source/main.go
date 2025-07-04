@@ -55,7 +55,7 @@ func main() {
 	mux.Handle("GET /v1/users", middlewares.LaravelAuth(http.HandlerFunc(users.GetAll)))
 	mux.Handle("GET /v1/users/{id}", middlewares.LaravelAuth(http.HandlerFunc(users.GetOne)))
 	mux.Handle("GET /v1/users/commercial/budgets", middlewares.LaravelAuth(http.HandlerFunc(users.GetCommercialBudgets)))
-	mux.Handle("GET /v1/users/commercial/reports/budgets", middlewares.LaravelAuth(http.HandlerFunc(users.GetCommercialBudgets)))
+	mux.Handle("GET /v1/users/commercial/reports/budgets", middlewares.LaravelAuth(http.HandlerFunc(users.GetCommercialBudgetsReport)))
 
 	mux.Handle("GET /v1/budgets", middlewares.LaravelAuth(http.HandlerFunc(budgets.GetAll)))
 	mux.Handle("POST /v1/budgets/shipping/{service}", middlewares.LaravelAuth(http.HandlerFunc(budgets.CreateShippingQuote)))
