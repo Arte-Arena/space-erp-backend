@@ -120,5 +120,9 @@ func GetServiceQueue(w http.ResponseWriter, r *http.Request) {
 		priorityQueue = append(priorityQueue, chat)
 	}
 
+	for i, j := 0, len(priorityQueue)-1; i < j; i, j = i+1, j-1 {
+		priorityQueue[i], priorityQueue[j] = priorityQueue[j], priorityQueue[i]
+	}
+
 	utils.SendResponse(w, http.StatusOK, "Service queue", priorityQueue, 0)
 }

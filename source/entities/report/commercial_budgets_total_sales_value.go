@@ -11,21 +11,20 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-func GetBudgetsTotalSalesValue(from, until string) (float64, error) {
+func GetCommercialBudgetsTotalSalesValue(seller bson.ObjectID, from, until string) (float64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
 
 	mongoURI := os.Getenv("MONGODB_URI")
-	opts := options.Client().ApplyURI(mongoURI)
-	mongoClient, err := mongo.Connect(opts)
+	client, err := mongo.Connect(options.Client().ApplyURI(mongoURI))
 	if err != nil {
 		return 0, err
 	}
-	defer mongoClient.Disconnect(ctx)
+	defer client.Disconnect(ctx)
 
-	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_BUDGETS)
+	coll := client.Database(database.GetDB()).Collection(database.COLLECTION_BUDGETS)
 
-	filter := bson.D{{Key: "approved", Value: true}}
+	filter := bson.D{{Key: "seller", Value: seller}, {Key: "approved", Value: true}}
 	if from != "" || until != "" {
 		dateFilter := bson.D{}
 		if from != "" {
@@ -52,7 +51,7 @@ func GetBudgetsTotalSalesValue(from, until string) (float64, error) {
 		}}},
 	}
 
-	cursor, err := collection.Aggregate(ctx, pipeline)
+	cursor, err := coll.Aggregate(ctx, pipeline)
 	if err != nil {
 		return 0, err
 	}

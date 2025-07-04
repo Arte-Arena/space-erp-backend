@@ -53,7 +53,6 @@ type Budget struct {
 	Discount           Discount      `json:"discount" bson:"discount"`
 	OldGifts           string        `json:"old_gifts" bson:"old_gifts"`
 	ProductionDeadline uint          `json:"production_deadline" bson:"production_deadline"`
-	Status             string        `json:"status" bson:"status"`
 	PaymentMethod      string        `json:"payment_method" bson:"payment_method"`
 	Billing            Billing       `json:"billing" bson:"billing"`
 	Trello_uri         string        `json:"trello_uri" bson:"trello_uri"`
@@ -61,6 +60,7 @@ type Budget struct {
 	DeliveryForecast   time.Time     `json:"delivery_forecast" bson:"delivery_forecast"`
 	CreatedAt          time.Time     `json:"created_at" bson:"created_at,omitempty"`
 	UpdatedAt          time.Time     `json:"updated_at" bson:"updated_at,omitempty"`
+	Approved           bool          `json:"approved" bson:"approved"`
 }
 
 type BudgetOld struct {

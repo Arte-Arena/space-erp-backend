@@ -25,7 +25,7 @@ func GetBudgetsSalesValueBySegment(from, until string) (map[string]float64, erro
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_BUDGETS)
 
-	filter := bson.D{}
+	filter := bson.D{{Key: "approved", Value: true}}
 	if from != "" || until != "" {
 		dateFilter := bson.D{}
 		if from != "" {
