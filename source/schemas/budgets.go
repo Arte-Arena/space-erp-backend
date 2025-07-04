@@ -53,7 +53,6 @@ type Budget struct {
 	Discount           Discount      `json:"discount" bson:"discount"`
 	OldGifts           string        `json:"old_gifts" bson:"old_gifts"`
 	ProductionDeadline uint          `json:"production_deadline" bson:"production_deadline"`
-	Status             string        `json:"status" bson:"status"`
 	PaymentMethod      string        `json:"payment_method" bson:"payment_method"`
 	Billing            Billing       `json:"billing" bson:"billing"`
 	Trello_uri         string        `json:"trello_uri" bson:"trello_uri"`
