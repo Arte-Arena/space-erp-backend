@@ -11,8 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-// GetCommercialBudgetsTotal returns the total number of budgets created by a specific seller (commercial user)
-// in an optional period range (RFC3339 strings). If both from and until are empty, the whole dataset is considered.
 func GetCommercialBudgetsTotal(seller bson.ObjectID, from, until string) (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
@@ -26,7 +24,7 @@ func GetCommercialBudgetsTotal(seller bson.ObjectID, from, until string) (int64,
 
 	coll := client.Database(database.GetDB()).Collection(database.COLLECTION_BUDGETS)
 
-	filter := bson.D{{Key: "seller", Value: seller}}
+	filter := bson.D{{Key: "seller", Value: seller}, {Key: "approved", Value: true}}
 	if from != "" || until != "" {
 		dateFilter := bson.D{}
 		if from != "" {

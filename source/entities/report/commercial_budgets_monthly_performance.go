@@ -25,7 +25,7 @@ func GetCommercialBudgetsMonthlyPerformance(seller bson.ObjectID, from, until st
 
 	coll := client.Database(database.GetDB()).Collection(database.COLLECTION_BUDGETS)
 
-	filter := bson.D{{Key: "seller", Value: seller}}
+	filter := bson.D{{Key: "seller", Value: seller}, {Key: "approved", Value: true}}
 	if from != "" || until != "" {
 		dateFilter := bson.D{}
 		if from != "" {

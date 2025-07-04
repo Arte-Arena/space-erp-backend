@@ -25,7 +25,7 @@ func GetBudgetsAverageTicket(from, until string) (float64, error) {
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_BUDGETS)
 
-	filter := bson.D{}
+	filter := bson.D{{Key: "approved", Value: true}}
 	if from != "" || until != "" {
 		dateFilter := bson.D{}
 		if from != "" {
