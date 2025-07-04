@@ -61,6 +61,7 @@ type Budget struct {
 	DeliveryForecast   time.Time     `json:"delivery_forecast" bson:"delivery_forecast"`
 	CreatedAt          time.Time     `json:"created_at" bson:"created_at,omitempty"`
 	UpdatedAt          time.Time     `json:"updated_at" bson:"updated_at,omitempty"`
+	Approved           bool          `json:"approved" bson:"approved"`
 }
 
 type BudgetOld struct {
