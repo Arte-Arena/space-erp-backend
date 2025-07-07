@@ -4,6 +4,7 @@ import (
 	"api/database"
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"time"
 
@@ -124,7 +125,7 @@ func GetCommercialBudgetsMonthlyPerformance(seller bson.ObjectID, from, until st
 
 		result[key] = map[string]any{
 			"total_budgets": int64(totalBudgets),
-			"total_value":   totalValue,
+			"total_value":   math.Round(totalValue*100) / 100,
 		}
 	}
 

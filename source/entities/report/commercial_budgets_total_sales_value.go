@@ -3,6 +3,7 @@ package report
 import (
 	"api/database"
 	"context"
+	"math"
 	"os"
 	"time"
 
@@ -64,6 +65,7 @@ func GetCommercialBudgetsTotalSalesValue(seller bson.ObjectID, from, until strin
 
 	if len(result) > 0 {
 		if total, ok := result[0]["total_value"].(float64); ok {
+			total = math.Round(total*100) / 100
 			return total, nil
 		}
 	}
