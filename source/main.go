@@ -68,7 +68,11 @@ func main() {
 	mux.Handle("GET /v1/funnels_history/{id}", middlewares.LaravelAuth(http.HandlerFunc(funnelshistory.GetAll)))
 
 	mux.Handle("GET /v1/space-desk/chats", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllChats)))
-	mux.Handle("GET /v1/space-desk/messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllMessages)))
+
+	// mux.Handle("GET /v1/space-desk/messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllMessages)))
+
+	mux.Handle("GET /v1/space-desk/chat-messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllMessagesByChatId)))
+
 	mux.Handle("GET /v1/space-desk/status", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllStatuses)))
 	mux.Handle("GET /v1/space-desk/service-queue", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetServiceQueue)))
 

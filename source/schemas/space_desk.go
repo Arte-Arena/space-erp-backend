@@ -6,9 +6,6 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-type SpaceDesk struct {
-}
-
 type SpaceDeskMessageEvent struct {
 	ID     bson.ObjectID           `json:"_id" bson:"_id,omitempty"`
 	Object string                  `json:"object" bson:"object"`
@@ -177,6 +174,29 @@ type SpaceDeskChatMetadata struct {
 	LastMessage       time.Time     `json:"last_message_timestamp" bson:"last_message_timestamp"`
 	User              string        `json:"user_id" bson:"user_id"`
 	Blocked           bool          `json:"blocked,omitempty" bson:"blocked,omitempty"`
+}
+
+type SpaceDeskChat struct {
+	ID                                    bson.ObjectID `bson:"_id,omitempty" json:"id"`
+	CompanyPhoneNumber                    string        `bson:"company_phone_number" json:"company_phone_number"`
+	ClientPhoneNumber                     string        `bson:"cliente_phone_number" json:"cliente_phone_number"`
+	CreatedAt                             time.Time     `bson:"created_at" json:"created_at"`
+	Description                           string        `bson:"description" json:"description"`
+	LastMessageExcerpt                    string        `bson:"last_message_excerpt" json:"last_message_excerpt"`
+	LastMessageFromClientTimestamp        time.Time     `bson:"last_message_from_client_timestamp" json:"last_message_from_client_timestamp"`
+	LastMessageID                         string        `bson:"last_message_id" json:"last_message_id"`
+	LastMessageSender                     string        `bson:"last_message_sender" json:"last_message_sender"`
+	Name                                  string        `bson:"name" json:"name"`
+	NickName                              string        `bson:"nick_name" json:"nick_name"`
+	UpdatedAt                             time.Time     `bson:"updated_at" json:"updated_at"`
+	UserID                                string        `bson:"user_id" json:"user_id"`
+	LastStatusFromCompanyRelatedToMessage struct {
+		Timestamp string `bson:"timestamp" json:"timestamp"`
+		Value     string `bson:"value" json:"value"`
+	} `bson:"last_status_from_company_related_to_message_id" json:"last_status_from_company_related_to_message_id"`
+	LastMessage          string    `bson:"last_message" json:"last_message"`
+	LastMessageTimestamp time.Time `bson:"last_message_timestamp" json:"last_message_timestamp"`
+	NeedTemplate         bool      `bson:"need_template" json:"need_template"`
 }
 
 type Group struct {
