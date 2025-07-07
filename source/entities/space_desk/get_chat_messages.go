@@ -34,7 +34,7 @@ func GetAllMessagesByChatId(w http.ResponseWriter, r *http.Request) {
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_MESSAGE)
 
-	findOptions := options.Find().SetSort(bson.D{{Key: "_id", Value: -1}})
+	findOptions := options.Find().SetSort(bson.D{{Key: "_id", Value: 1}})
 	objectID, err := bson.ObjectIDFromHex(chatId)
 	if err != nil {
 		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.INVALID_CHAT_ID)
