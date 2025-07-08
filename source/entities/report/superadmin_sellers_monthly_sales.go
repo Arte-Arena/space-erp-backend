@@ -11,7 +11,10 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-func GetSuperadminSellersMonthlySales(client *mongo.Client, sellerIDs []bson.ObjectID, from, until string) (map[bson.ObjectID]map[string]float64, error) {
+func GetSuperadminSellersMonthlySales(client *mongo.Client, sellerIDs []bson.ObjectID, from, until string) (map[bson.ObjectID]struct {
+	Name  string
+	Sales map[string]float64
+}, error) {
 	ctx := context.Background()
 	filter := bson.D{{Key: "approved", Value: true}}
 	if len(sellerIDs) > 0 {
@@ -70,5 +73,36 @@ func GetSuperadminSellersMonthlySales(client *mongo.Client, sellerIDs []bson.Obj
 			result[doc.ID.Seller][key] = doc.TotalValue
 		}
 	}
-	return result, nil
+
+	userColl := client.Database(database.GetDB()).Collection(database.COLLECTION_USERS)
+	var ids []bson.ObjectID
+	for id := range result {
+		ids = append(ids, id)
+	}
+	userCursor, err := userColl.Find(ctx, bson.M{"_id": bson.M{"$in": ids}})
+	if err != nil {
+		return nil, err
+	}
+	defer userCursor.Close(ctx)
+	nameMap := map[bson.ObjectID]string{}
+	for userCursor.Next(ctx) {
+		var user struct {
+			ID   bson.ObjectID `bson:"_id"`
+			Name string        `bson:"name"`
+		}
+		if err := userCursor.Decode(&user); err == nil {
+			nameMap[user.ID] = user.Name
+		}
+	}
+	final := map[bson.ObjectID]struct {
+		Name  string
+		Sales map[string]float64
+	}{}
+	for id, sales := range result {
+		final[id] = struct {
+			Name  string
+			Sales map[string]float64
+		}{Name: nameMap[id], Sales: sales}
+	}
+	return final, nil
 }

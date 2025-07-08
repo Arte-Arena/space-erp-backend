@@ -13,6 +13,7 @@ import (
 
 type SellerRanking struct {
 	SellerID      bson.ObjectID `bson:"_id" json:"seller_id"`
+	SellerName    string        `json:"seller_name"`
 	SalesCount    int64         `json:"sales_count"`
 	TotalValue    float64       `json:"total_value"`
 	AverageTicket float64       `json:"average_ticket"`
@@ -108,6 +109,27 @@ func GetSuperadminSellersRanking(client *mongo.Client, from, until string) ([]Se
 		}
 	}
 
+	userColl := client.Database(database.GetDB()).Collection(database.COLLECTION_USERS)
+	var sellerIDs []bson.ObjectID
+	for seller := range salesCount {
+		sellerIDs = append(sellerIDs, seller)
+	}
+	userCursor, err := userColl.Find(ctx, bson.M{"_id": bson.M{"$in": sellerIDs}})
+	if err != nil {
+		return nil, err
+	}
+	defer userCursor.Close(ctx)
+	nameMap := map[bson.ObjectID]string{}
+	for userCursor.Next(ctx) {
+		var user struct {
+			ID   bson.ObjectID `bson:"_id"`
+			Name string        `bson:"name"`
+		}
+		if err := userCursor.Decode(&user); err == nil {
+			nameMap[user.ID] = user.Name
+		}
+	}
+
 	rankings := []SellerRanking{}
 	for seller, sales := range salesCount {
 		total := totalBudgets[seller]
@@ -121,6 +143,7 @@ func GetSuperadminSellersRanking(client *mongo.Client, from, until string) ([]Se
 		}
 		rankings = append(rankings, SellerRanking{
 			SellerID:      seller,
+			SellerName:    nameMap[seller],
 			SalesCount:    sales,
 			TotalValue:    math.Round(totalValue[seller]*100) / 100,
 			AverageTicket: avgTicket,
