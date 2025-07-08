@@ -60,7 +60,7 @@ type SpaceDeskMessage struct {
 	Type            string                    `json:"type" bson:"type"`
 	From            string                    `json:"from,omitempty" bson:"from,omitempty"`
 	To              string                    `json:"to,omitempty" bson:"to,omitempty"`
-	ID              string                    `json:"_id,omitempty" bson:"id,omitempty"`
+	ID              string                    `json:"id,omitempty" bson:"id,omitempty"`
 	Timestamp       string                    `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
 	Text            *SpaceDeskMessageText     `json:"text,omitempty" bson:"text,omitempty"`
 	Video           *SpaceDeskMedia           `json:"video,omitempty" bson:"video,omitempty"`
