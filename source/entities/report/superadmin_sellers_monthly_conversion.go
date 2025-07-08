@@ -3,6 +3,7 @@ package report
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"api/database"
@@ -119,10 +120,14 @@ func GetSuperadminSellersMonthlyConversion(client *mongo.Client, sellerIDs []bso
 		if id.IsZero() {
 			continue
 		}
+		roundedConv := map[string]float64{}
+		for k, v := range conv {
+			roundedConv[k] = math.Round(v*100) / 100
+		}
 		final[id] = struct {
 			Name       string
 			Conversion map[string]float64
-		}{Name: nameMap[id], Conversion: conv}
+		}{Name: nameMap[id], Conversion: roundedConv}
 	}
 	return final, nil
 }

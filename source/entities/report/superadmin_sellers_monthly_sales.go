@@ -3,6 +3,7 @@ package report
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"api/database"
@@ -102,10 +103,14 @@ func GetSuperadminSellersMonthlySales(client *mongo.Client, sellerIDs []bson.Obj
 		if id.IsZero() {
 			continue
 		}
+		roundedSales := map[string]float64{}
+		for k, v := range sales {
+			roundedSales[k] = math.Round(v*100) / 100
+		}
 		final[id] = struct {
 			Name  string
 			Sales map[string]float64
-		}{Name: nameMap[id], Sales: sales}
+		}{Name: nameMap[id], Sales: roundedSales}
 	}
 	return final, nil
 }

@@ -146,8 +146,8 @@ func GetSuperadminSellersRanking(client *mongo.Client, from, until string) ([]Se
 			SellerName:    nameMap[seller],
 			SalesCount:    sales,
 			TotalValue:    math.Round(totalValue[seller]*100) / 100,
-			AverageTicket: avgTicket,
-			Conversion:    conversion,
+			AverageTicket: math.Round(avgTicket*100) / 100,
+			Conversion:    math.Round(conversion*100) / 100,
 		})
 	}
 	return rankings, nil

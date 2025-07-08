@@ -6,6 +6,8 @@ import (
 
 	"api/database"
 
+	"math"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -105,7 +107,7 @@ func GetSuperadminSellersConversionRate(client *mongo.Client, sellerIDs []bson.O
 		final[id] = struct {
 			Name string
 			Rate float64
-		}{Name: nameMap[id], Rate: value}
+		}{Name: nameMap[id], Rate: math.Round(value*100) / 100}
 	}
 	return final, nil
 }
