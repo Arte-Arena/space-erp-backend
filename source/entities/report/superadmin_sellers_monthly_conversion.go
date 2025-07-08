@@ -116,6 +116,9 @@ func GetSuperadminSellersMonthlyConversion(client *mongo.Client, sellerIDs []bso
 		Conversion map[string]float64
 	}{}
 	for id, conv := range result {
+		if id.IsZero() {
+			continue
+		}
 		final[id] = struct {
 			Name       string
 			Conversion map[string]float64

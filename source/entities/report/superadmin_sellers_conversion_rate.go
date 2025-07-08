@@ -99,6 +99,9 @@ func GetSuperadminSellersConversionRate(client *mongo.Client, sellerIDs []bson.O
 		Rate float64
 	}{}
 	for id, value := range result {
+		if id.IsZero() {
+			continue
+		}
 		final[id] = struct {
 			Name string
 			Rate float64

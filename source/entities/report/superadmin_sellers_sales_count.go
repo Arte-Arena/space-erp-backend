@@ -84,6 +84,9 @@ func GetSuperadminSellersSalesCount(client *mongo.Client, sellerIDs []bson.Objec
 		Count int64
 	}{}
 	for id, value := range result {
+		if id.IsZero() {
+			continue
+		}
 		final[id] = struct {
 			Name  string
 			Count int64

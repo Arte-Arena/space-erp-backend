@@ -99,6 +99,9 @@ func GetSuperadminSellersMonthlySales(client *mongo.Client, sellerIDs []bson.Obj
 		Sales map[string]float64
 	}{}
 	for id, sales := range result {
+		if id.IsZero() {
+			continue
+		}
 		final[id] = struct {
 			Name  string
 			Sales map[string]float64

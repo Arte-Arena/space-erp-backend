@@ -85,6 +85,9 @@ func GetSuperadminSellersTotalSales(client *mongo.Client, sellerIDs []bson.Objec
 		Value float64
 	}{}
 	for id, value := range result {
+		if id.IsZero() {
+			continue
+		}
 		final[id] = struct {
 			Name  string
 			Value float64
