@@ -151,7 +151,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 
 		// Atualizar a collection de chat
 
-		fmt.Println("============>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> statusMessageId:", statusMessageId)
+		// fmt.Println("============>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> statusMessageId:", statusMessageId)
 
 		fmt.Printf("statusMessageId: %T\n", statusMessageId)
 		fmt.Printf("lastMessageIdFromDB: %T\n", lastMessageIdFromDB)
@@ -318,6 +318,8 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 						"message_from_client_timestamp": lastMessageFromClientTimestamp,
 						"message_id":                    messageFromClientId,
 						"body":                          body,
+						"from":                          "client",
+						"by":                            clientPhoneNumber,
 					},
 					"$setOnInsert": bson.M{
 						"created_at": updatedAt,
