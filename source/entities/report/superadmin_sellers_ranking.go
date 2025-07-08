@@ -17,7 +17,6 @@ type SellerRanking struct {
 	SalesCount    int64         `json:"sales_count"`
 	TotalValue    float64       `json:"total_value"`
 	AverageTicket float64       `json:"average_ticket"`
-	Conversion    float64       `json:"conversion"`
 }
 
 func GetSuperadminSellersRanking(client *mongo.Client, from, until string) ([]SellerRanking, error) {
@@ -132,14 +131,10 @@ func GetSuperadminSellersRanking(client *mongo.Client, from, until string) ([]Se
 
 	rankings := []SellerRanking{}
 	for seller, sales := range salesCount {
-		total := totalBudgets[seller]
-		conversion := 0.0
-		if total > 0 {
-			conversion = (float64(sales) / float64(total)) * 100.0
-		}
 		avgTicket := 0.0
 		if sales > 0 {
-			avgTicket = math.Round((totalValue[seller]/float64(sales))*100) / 100
+			totalVal := totalValue[seller]
+			avgTicket = totalVal / float64(sales)
 		}
 		rankings = append(rankings, SellerRanking{
 			SellerID:      seller,
@@ -147,7 +142,6 @@ func GetSuperadminSellersRanking(client *mongo.Client, from, until string) ([]Se
 			SalesCount:    sales,
 			TotalValue:    math.Round(totalValue[seller]*100) / 100,
 			AverageTicket: math.Round(avgTicket*100) / 100,
-			Conversion:    math.Round(conversion*100) / 100,
 		})
 	}
 	return rankings, nil
