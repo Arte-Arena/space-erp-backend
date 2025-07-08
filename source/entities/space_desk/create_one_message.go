@@ -241,10 +241,12 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao inserir evento no MongoDB: "+err.Error(), nil, utils.ERROR_TO_INSERT_IN_MONGODB)
 		return
 	}
-	
+
 	newRaw := bson.M{
 		"body":              reqBody.Body,
 		"chat_id":           objID,
+		"by":                reqBody.UserId,
+		"from":              "company",
 		"created_at":        time.Now().UTC(),
 		"message_id":        wamid,
 		"message_timestamp": time.Now().UTC(),
