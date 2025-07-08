@@ -128,17 +128,17 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 	}
 	defer cursor.Close(ctx)
 
-	chats := []schemas.SpaceDeskChatMetadata{}
+	chats := []schemas.SpaceDeskChat{}
 	twentyFourHoursAgo := time.Now().Add(-24 * time.Hour)
 
 	for cursor.Next(ctx) {
-		var chat schemas.SpaceDeskChatMetadata
+		var chat schemas.SpaceDeskChat
 		if err := cursor.Decode(&chat); err != nil {
 			continue
 		}
 
 		// Atualiza o status do chat caso tenha mais de 24 horas
-		if !chat.LastMessage.IsZero() && chat.LastMessage.Before(twentyFourHoursAgo) {
+		if !chat.LastMessageTimestamp.IsZero() && chat.LastMessageTimestamp.Before(twentyFourHoursAgo) {
 			if !chat.NeedTemplate {
 				chat.NeedTemplate = true
 			}
@@ -166,7 +166,7 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 		for _, n := range numbers {
 			numbersMap[n] = true
 		}
-		filteredChats := make([]schemas.SpaceDeskChatMetadata, 0, len(chats))
+		filteredChats := make([]schemas.SpaceDeskChat, 0, len(chats))
 		for _, chat := range chats {
 			phoneDigits := onlyDigits(chat.ClientPhoneNumber)
 			if numbersMap[phoneDigits] {

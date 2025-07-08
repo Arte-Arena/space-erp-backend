@@ -101,26 +101,12 @@ func GetSuperadminSellersPerformanceReport(w http.ResponseWriter, r *http.Reques
 		}
 		responseData["sales_count"] = v
 	}
-	if _, ok := params["conversion_rate"]; ok {
-		v, err := report.GetSuperadminSellersConversionRate(client, sellerIDs, from, until)
-		if handleErr(err) {
-			return
-		}
-		responseData["conversion_rate"] = v
-	}
 	if _, ok := params["monthly_sales"]; ok {
 		v, err := report.GetSuperadminSellersMonthlySales(client, sellerIDs, from, until)
 		if handleErr(err) {
 			return
 		}
 		responseData["monthly_sales"] = v
-	}
-	if _, ok := params["monthly_conversion"]; ok {
-		v, err := report.GetSuperadminSellersMonthlyConversion(client, sellerIDs, from, until)
-		if handleErr(err) {
-			return
-		}
-		responseData["monthly_conversion"] = v
 	}
 	if _, ok := params["ranking"]; ok {
 		v, err := report.GetSuperadminSellersRanking(client, from, until)

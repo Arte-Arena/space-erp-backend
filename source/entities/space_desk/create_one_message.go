@@ -106,6 +106,7 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	isTemplate := reqBody.Type == "template"
 	canSendTemplate := ShouldSendAsTemplate(chatDoc.LastMessage)
 
+	tipo := "Text"
 	var payload map[string]any
 	if isTemplate && !canSendTemplate {
 		params, _ := reqBody.Params.([]interface{})
@@ -130,6 +131,7 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 	} else if isTemplate && canSendTemplate {
+		tipo = "Template"
 		payload = map[string]any{
 			"messaging_product": "whatsapp",
 			"to":                recipient,
@@ -231,8 +233,48 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}
+
 	col := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_EVENTS_WHATSAPP)
 	_, err = col.InsertOne(ctx, raw)
+	if err != nil {
+		log.Println("Erro ao inserir evento no MongoDB:", err)
+		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao inserir evento no MongoDB: "+err.Error(), nil, utils.ERROR_TO_INSERT_IN_MONGODB)
+		return
+	}
+
+	newRaw := bson.M{
+		"body":              reqBody.Body,
+		"chat_id":           objID,
+		"by":                reqBody.UserId,
+		"from":              "company",
+		"created_at":        time.Now().UTC(),
+		"message_id":        wamid,
+		"message_timestamp": fmt.Sprint(now.Unix()),
+		"type":              tipo,
+		"status":            "",
+		"updated_at":        time.Now().UTC().Format(time.RFC3339),
+	}
+	colMessages := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_MESSAGE)
+	_, err = colMessages.InsertOne(ctx, newRaw)
+	if err != nil {
+		log.Println("Erro ao inserir evento no MongoDB:", err)
+		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao inserir evento no MongoDB: "+err.Error(), nil, utils.ERROR_TO_INSERT_IN_MONGODB)
+		return
+	}
+
+	filter := bson.M{"_id": objID}
+	update := bson.M{
+		"$set": bson.M{
+			"last_message_id":                      wamid,
+			"last_message_excerpt":                 reqBody.Body,
+			"last_message_sender":                  "company",
+			"last_template_from_company_timestamp": fmt.Sprint(now.Unix()),
+			"updated_at":                           time.Now().UTC().Format(time.RFC3339),
+		},
+	}
+	colChat := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
+	updateOpts := options.UpdateOne().SetUpsert(false) //true caso puder criar 
+	_, err = colChat.UpdateOne(ctx, filter, update, updateOpts)
 	if err != nil {
 		log.Println("Erro ao inserir evento no MongoDB:", err)
 		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao inserir evento no MongoDB: "+err.Error(), nil, utils.ERROR_TO_INSERT_IN_MONGODB)

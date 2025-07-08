@@ -6,6 +6,8 @@ import (
 
 	"api/database"
 
+	"math"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -85,10 +87,13 @@ func GetSuperadminSellersTotalSales(client *mongo.Client, sellerIDs []bson.Objec
 		Value float64
 	}{}
 	for id, value := range result {
+		if id.IsZero() {
+			continue
+		}
 		final[id] = struct {
 			Name  string
 			Value float64
-		}{Name: nameMap[id], Value: value}
+		}{Name: nameMap[id], Value: math.Round(value*100) / 100}
 	}
 	return final, nil
 }
