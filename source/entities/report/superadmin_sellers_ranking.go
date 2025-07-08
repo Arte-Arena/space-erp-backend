@@ -131,6 +131,9 @@ func GetSuperadminSellersRanking(client *mongo.Client, from, until string) ([]Se
 
 	rankings := []SellerRanking{}
 	for seller, sales := range salesCount {
+		if seller.IsZero() {
+			continue
+		}
 		avgTicket := 0.0
 		if sales > 0 {
 			totalVal := totalValue[seller]
