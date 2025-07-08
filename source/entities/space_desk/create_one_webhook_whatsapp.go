@@ -251,16 +251,105 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 
 		lastMessageFromClientTimestamp := time.Unix(lastMessageTimestampInt, 0)
 
-		var lastMessageFromClient string
+		// Verificar se há contexto (mensagem sendo respondida)
+		var contextInfo map[string]interface{}
+		var repliedToMessageId string
+		if context, ok := messages["context"].(map[string]interface{}); ok {
+			contextInfo = context
+			if id, ok := context["id"].(string); ok {
+				repliedToMessageId = id
+			}
+		}
 
-		if msgType, ok := messages["type"].(string); ok && msgType == "text" {
+		// Determinar o tipo de mensagem e extrair conteúdo apropriado
+		msgType, ok := messages["type"].(string)
+		if !ok {
+			msgType = "unknown"
+		}
+
+		var lastMessageFromClient string
+		var mediaURL string
+		var caption string
+		var stickerID string
+		var reactionEmoji string
+		var reactionMessageID string
+
+		switch msgType {
+		case "text":
 			if textObj, ok := messages["text"].(map[string]interface{}); ok {
 				if body, ok := textObj["body"].(string); ok {
 					lastMessageFromClient = body
 				}
 			}
+
+		case "image", "video", "audio", "document":
+			// Tratamento para mídias (imagem, vídeo, áudio, documento)
+			mediaType := msgType // "image", "video", etc.
+			mediaField, ok := messages[mediaType].(map[string]interface{})
+			if ok {
+				// Caption para imagens/vídeos/documentos
+				if cap, ok := mediaField["caption"].(string); ok {
+					caption = cap
+					lastMessageFromClient = caption
+				}
+
+				// ID da mídia para posterior download
+				if id, ok := mediaField["id"].(string); ok {
+					mediaURL = id // Na prática, você precisaria baixar usando a API
+				}
+
+				// Para documentos, pegar o nome do arquivo
+				if msgType == "document" {
+					if filename, ok := mediaField["filename"].(string); ok {
+						lastMessageFromClient = "Documento: " + filename
+					}
+				}
+			}
+
+		case "sticker":
+			if stickerObj, ok := messages["sticker"].(map[string]interface{}); ok {
+				if id, ok := stickerObj["id"].(string); ok {
+					stickerID = id
+					lastMessageFromClient = "Figurinha enviada"
+				}
+			}
+
+		case "reaction":
+			if reactionObj, ok := messages["reaction"].(map[string]interface{}); ok {
+				if emoji, ok := reactionObj["emoji"].(string); ok {
+					reactionEmoji = emoji
+				}
+				if msgId, ok := reactionObj["message_id"].(string); ok {
+					reactionMessageID = msgId
+				}
+				lastMessageFromClient = "Reação: " + reactionEmoji
+			}
+
+		case "location":
+			if locationObj, ok := messages["location"].(map[string]interface{}); ok {
+				if latitude, ok := locationObj["latitude"].(float64); ok {
+					if longitude, ok := locationObj["longitude"].(float64); ok {
+						lastMessageFromClient = fmt.Sprintf("Localização: %.6f, %.6f", latitude, longitude)
+					}
+				}
+				if name, ok := locationObj["name"].(string); ok {
+					lastMessageFromClient += " (" + name + ")"
+				}
+				if address, ok := locationObj["address"].(string); ok {
+					lastMessageFromClient += " - " + address
+				}
+			}
+
+		case "contacts":
+			if contactsObj, ok := messages["contacts"].([]interface{}); ok && len(contactsObj) > 0 {
+				lastMessageFromClient = "Contato(s) compartilhado(s)"
+			}
+
+		default:
+			lastMessageFromClient = "Mensagem de tipo não tratado: " + msgType
 		}
 
+		// Atualizar a collection de chat (igual ao seu código atual)
 		filter := bson.M{"cliente_phone_number": clientPhoneNumber, "company_phone_number": companyPhoneNumber}
 		update := bson.M{
 			"$set": bson.M{
@@ -282,21 +371,17 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 		}
 		updateOpts := options.UpdateOne().SetUpsert(true)
 		updateResult, err := collection_chat.UpdateOne(ctx, filter, update, updateOpts)
-
 		if err != nil {
-			log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
+			log.Printf("[CreateOneWebhookWhatsapp] Error updating chat: %v", err)
 		}
 
-		// Criar ou Atualizar a collection de message
-
+		// Criar ou Atualizar a collection de message com todos os tipos
 		collection_message := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_MESSAGE)
 
 		var chatId interface{}
-
 		if updateResult.UpsertedID != nil {
 			chatId = updateResult.UpsertedID
 		} else {
-			// Buscar o _id do chat pelo filtro (sempre vai achar se não foi upsert)
 			var chat struct {
 				ID interface{} `bson:"_id"`
 			}
@@ -306,34 +391,82 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if textObj, ok := messages["text"].(map[string]interface{}); ok {
-			if body, ok := textObj["body"].(string); ok {
+		// Estrutura base da mensagem
+		messageBase := bson.M{
+			"chat_id":                       chatId,
+			"type":                          msgType,
+			"message_from_client_timestamp": lastMessageFromClientTimestamp,
+			"message_id":                    messageFromClientId,
+			"from":                          "client",
+			"by":                            clientPhoneNumber,
+			"updated_at":                    updatedAt,
+		}
 
-				filter = bson.M{"message_id": messageFromClientId}
+		// Adicionar campos específicos por tipo
+		switch msgType {
+		case "text":
+			messageBase["body"] = lastMessageFromClient
 
-				update = bson.M{
-					"$set": bson.M{
-						"chat_id":                       chatId,
-						"type":                          "text",
-						"message_from_client_timestamp": lastMessageFromClientTimestamp,
-						"message_id":                    messageFromClientId,
-						"body":                          body,
-						"from":                          "client",
-						"by":                            clientPhoneNumber,
-					},
-					"$setOnInsert": bson.M{
-						"created_at": updatedAt,
-					},
-				}
-
-				updateOpts := options.UpdateOne().SetUpsert(true)
-				updateResult, err := collection_message.UpdateOne(ctx, filter, update, updateOpts)
-				fmt.Println("UpdateOne result (message):", updateResult)
-
-				if err != nil {
-					log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
+		case "image", "video", "audio", "document":
+			messageBase["media_id"] = mediaURL
+			if caption != "" {
+				messageBase["caption"] = caption
+			}
+			if msgType == "document" {
+				if doc, ok := messages["document"].(map[string]interface{}); ok {
+					if filename, ok := doc["filename"].(string); ok {
+						messageBase["filename"] = filename
+					}
+					if mimeType, ok := doc["mime_type"].(string); ok {
+						messageBase["mime_type"] = mimeType
+					}
 				}
 			}
+
+		case "sticker":
+			messageBase["sticker_id"] = stickerID
+
+		case "reaction":
+			messageBase["reaction_emoji"] = reactionEmoji
+			messageBase["reaction_to_message_id"] = reactionMessageID
+
+		case "location":
+			if loc, ok := messages["location"].(map[string]interface{}); ok {
+				messageBase["location"] = bson.M{
+					"latitude":  loc["latitude"],
+					"longitude": loc["longitude"],
+					"name":      loc["name"],
+					"address":   loc["address"],
+				}
+			}
+
+		case "contacts":
+			if contacts, ok := messages["contacts"].([]interface{}); ok {
+				messageBase["shared_contacts"] = contacts
+			}
+		}
+
+		// Adicionar contexto se existir
+		if contextInfo != nil {
+			messageBase["context_info"] = contextInfo
+			if repliedToMessageId != "" {
+				messageBase["replied_to_message_id"] = repliedToMessageId
+			}
+		}
+
+		// Criar filtro e update para a mensagem
+		filter = bson.M{"message_id": messageFromClientId}
+		update = bson.M{
+			"$set": messageBase,
+			"$setOnInsert": bson.M{
+				"created_at": updatedAt,
+			},
+		}
+
+		updateOpts = options.UpdateOne().SetUpsert(true)
+		_, err = collection_message.UpdateOne(ctx, filter, update, updateOpts)
+		if err != nil {
+			log.Printf("[CreateOneWebhookWhatsapp] Error updating message: %v", err)
 		}
 
 		// Verificar se o chat é um novo Lead

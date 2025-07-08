@@ -188,7 +188,6 @@ func CreateOneMedia(w http.ResponseWriter, r *http.Request) {
 			raw := bson.M{
 				"entry": []any{
 					bson.M{
-						"id": "1343302196977353", // opcional: pode deixar vazio ou buscar de config/env
 						"changes": []any{
 							bson.M{
 								"field": "messages",
@@ -205,6 +204,46 @@ func CreateOneMedia(w http.ResponseWriter, r *http.Request) {
 			if _, err := col.InsertOne(ctx, raw); err != nil {
 				log.Printf("[SendMedia] Erro ao inserir no Mongo: %v", err)
 			}
+			// atualiza a mensagem no MongoDB
+
+			newRaw := bson.M{
+				"body":              mediaId,
+				"chat_id":           objID,
+				"by":                userId,
+				"from":              "company",
+				"created_at":        time.Now().UTC(),
+				"message_id":        msgID,
+				"message_timestamp": fmt.Sprint(now.Unix()),
+				"type":              mediaType,
+				"status":            "",
+				"updated_at":        time.Now().UTC().Format(time.RFC3339),
+			}
+			colMessages := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_MESSAGE)
+			_, err = colMessages.InsertOne(ctx, newRaw)
+			if err != nil {
+				log.Println("Erro ao inserir evento no MongoDB:", err)
+				utils.SendResponse(w, http.StatusInternalServerError, "Erro ao inserir evento no MongoDB: "+err.Error(), nil, utils.ERROR_TO_INSERT_IN_MONGODB)
+				return
+			}
+			// atualiza o chat no MongoDB
+			filter := bson.M{"_id": objID}
+			update := bson.M{
+				"$set": bson.M{
+					"last_message_id":                      msgID,
+					"last_message_excerpt":                 "midia: " + mediaId,
+					"last_message_sender":                  "company",
+					"last_template_from_company_timestamp": fmt.Sprint(now.Unix()),
+					"updated_at":                           time.Now().UTC().Format(time.RFC3339),
+				},
+			}
+			colChat := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
+			updateOpts := options.UpdateOne().SetUpsert(false) //true caso puder criar
+			_, err = colChat.UpdateOne(ctx, filter, update, updateOpts)
+			if err != nil {
+				log.Println("Erro ao inserir evento no MongoDB:", err)
+				utils.SendResponse(w, http.StatusInternalServerError, "Erro ao inserir evento no MongoDB: "+err.Error(), nil, utils.ERROR_TO_INSERT_IN_MONGODB)
+				return
+			}
 		}
 	}()
 
@@ -219,7 +258,7 @@ func CreateOneMedia(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"id": chatId,
+		"chatId": chatId,
 		"messages": []map[string]string{{
 			"id":      respData.Messages[0].ID,
 			"mediaId": mediaId,
