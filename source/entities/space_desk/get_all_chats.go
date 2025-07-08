@@ -166,7 +166,7 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 		for _, n := range numbers {
 			numbersMap[n] = true
 		}
-		filteredChats := make([]schemas.SpaceDeskChatMetadata, 0, len(chats))
+		filteredChats := make([]schemas.SpaceDeskChat, 0, len(chats))
 		for _, chat := range chats {
 			phoneDigits := onlyDigits(chat.ClientPhoneNumber)
 			if numbersMap[phoneDigits] {
