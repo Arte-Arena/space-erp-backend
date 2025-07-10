@@ -62,8 +62,7 @@ func UpdateCommercialGoal(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if goalUpdate.GoalType != "" {
-		validGoalType := goalUpdate.GoalType == schemas.REPORT_GOAL_TYPE_DAILY ||
-			goalUpdate.GoalType == schemas.REPORT_GOAL_TYPE_MONTHLY ||
+		validGoalType := goalUpdate.GoalType == schemas.REPORT_GOAL_TYPE_MONTHLY ||
 			goalUpdate.GoalType == schemas.REPORT_GOAL_TYPE_YEARLY
 		if !validGoalType {
 			utils.SendResponse(w, http.StatusBadRequest, "Tipo de meta inválido", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
