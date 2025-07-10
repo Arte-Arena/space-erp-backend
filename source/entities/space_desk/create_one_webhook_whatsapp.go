@@ -253,6 +253,8 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 
 		var lastMessageFromClient string
 
+		msgType, _ := messages["type"].(string)
+
 		if msgType, ok := messages["type"].(string); ok && msgType == "text" {
 			if textObj, ok := messages["text"].(map[string]interface{}); ok {
 				if body, ok := textObj["body"].(string); ok {
@@ -267,6 +269,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 				"name":                               name,
 				"last_message_id":                    messageFromClientId,
 				"last_message_excerpt":               lastMessageFromClient,
+				"last_message_type":                  msgType,
 				"last_message_sender":                "client",
 				"last_message_from_client_timestamp": lastMessageFromClientTimestamp,
 				"updated_at":                         updatedAt,
