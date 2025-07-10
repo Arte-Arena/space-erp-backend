@@ -2,12 +2,15 @@ package users
 
 import (
 	"api/database"
+	"api/middlewares"
 	"api/schemas"
 	"api/utils"
 	"context"
 	"encoding/json"
 	"net/http"
 	"os"
+	"slices"
+	"strconv"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -16,13 +19,49 @@ import (
 )
 
 func UpdateOne(w http.ResponseWriter, r *http.Request) {
+	ctxUserRaw := r.Context().Value(middlewares.UserContextKey)
+	if ctxUserRaw == nil {
+		utils.SendResponse(w, http.StatusUnauthorized, "Usuário não autenticado", nil, 0)
+		return
+	}
+	laravelUser, ok := ctxUserRaw.(middlewares.LaravelUser)
+	if !ok {
+		utils.SendResponse(w, http.StatusUnauthorized, "Usuário inválido", nil, 0)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
+	defer cancel()
+
+	mongoURI := os.Getenv(utils.MONGODB_URI)
+	client, err := mongo.Connect(options.Client().ApplyURI(mongoURI))
+	if err != nil {
+		utils.SendResponse(w, http.StatusBadGateway, "", nil, utils.CANNOT_CONNECT_TO_MONGODB)
+		return
+	}
+	defer client.Disconnect(ctx)
+
+	var authenticatedUserDoc schemas.User
+	err = client.Database(database.GetDB()).Collection(database.COLLECTION_USERS).
+		FindOne(ctx, bson.M{"old_id": laravelUser.ID}).Decode(&authenticatedUserDoc)
+	if err != nil {
+		utils.SendResponse(w, http.StatusUnauthorized, "Usuário não encontrado", nil, utils.NOT_FOUND)
+		return
+	}
+
+	isSuperAdmin := slices.Contains(authenticatedUserDoc.Role, schemas.USERS_ROLE_SUPER_ADMIN)
+	if !isSuperAdmin {
+		utils.SendResponse(w, http.StatusForbidden, "Usuário não possui permissão super_admin", nil, 0)
+		return
+	}
+
 	idStr := r.PathValue("id")
 	if idStr == "" {
 		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
 		return
 	}
 
-	id, err := bson.ObjectIDFromHex(idStr)
+	oldID, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
 		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.INVALID_USER_ID_FORMAT)
 		return
@@ -39,21 +78,9 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
-	defer cancel()
+	collection := client.Database(database.GetDB()).Collection(database.COLLECTION_USERS)
 
-	mongoURI := os.Getenv(utils.MONGODB_URI)
-	opts := options.Client().ApplyURI(mongoURI)
-	mongoClient, err := mongo.Connect(opts)
-	if err != nil {
-		utils.SendResponse(w, http.StatusBadGateway, "", nil, utils.CANNOT_CONNECT_TO_MONGODB)
-		return
-	}
-	defer mongoClient.Disconnect(ctx)
-
-	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_USERS)
-
-	filter := bson.D{{Key: "_id", Value: id}}
+	filter := bson.D{{Key: "old_id", Value: oldID}}
 
 	updateDoc := bson.D{}
 
