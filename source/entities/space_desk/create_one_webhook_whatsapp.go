@@ -435,12 +435,11 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 
 			// Se houver contexto (reply/citação), salva também
 			if ctxObj, ok := messages["context"].(map[string]interface{}); ok {
-				// context.id e context.from estão documentados como parte do objeto context :contentReference[oaicite:0]{index=0}
-				ctxSet := bson.M{"message_id": ctxObj["id"].(string)}
-				if from, ok2 := ctxObj["from"].(string); ok2 {
-					ctxSet["from"] = from
+				ctxSet := bson.M{
+					"message_id": ctxObj["id"].(string),
+					"from":       ctxObj["from"].(string),
 				}
-				if t, ok3 := ctxObj["type"].(string); ok3 {
+				if t, ok2 := ctxObj["type"].(string); ok2 {
 					ctxSet["type"] = t
 				}
 				s["context"] = ctxSet
