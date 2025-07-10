@@ -54,6 +54,7 @@ func main() {
 
 	mux.Handle("GET /v1/users", middlewares.LaravelAuth(http.HandlerFunc(users.GetAll)))
 	mux.Handle("GET /v1/users/{id}", middlewares.LaravelAuth(http.HandlerFunc(users.GetOne)))
+	mux.Handle("PATCH /v1/users/{id}", middlewares.LaravelAuth(http.HandlerFunc(users.UpdateOne)))
 	mux.Handle("GET /v1/users/commercial/budgets", middlewares.LaravelAuth(http.HandlerFunc(users.GetCommercialBudgets)))
 	mux.Handle("GET /v1/users/commercial/reports/budgets", middlewares.LaravelAuth(http.HandlerFunc(users.GetCommercialBudgetsReport)))
 	mux.Handle("GET /v1/users/superadmin/reports/commercial", middlewares.LaravelAuth(http.HandlerFunc(users.GetSuperadminSellersPerformanceReport)))
@@ -66,6 +67,11 @@ func main() {
 	mux.Handle("GET /v1/orders/{id}", middlewares.LaravelAuth(http.HandlerFunc(orders.GetOne)))
 
 	mux.Handle("GET /v1/reports", middlewares.LaravelAuth(http.HandlerFunc(report.GetByQuery)))
+	mux.Handle("GET /v1/reports/commercial/goals", middlewares.LaravelAuth(http.HandlerFunc(report.GetAllCommercialGoals)))
+	mux.Handle("POST /v1/reports/commercial/goals", middlewares.LaravelAuth(http.HandlerFunc(report.CreateCommercialGoal)))
+	mux.Handle("GET /v1/reports/commercial/goals/{id}", middlewares.LaravelAuth(http.HandlerFunc(report.GetOneCommercialGoal)))
+	mux.Handle("PATCH /v1/reports/commercial/goals/{id}", middlewares.LaravelAuth(http.HandlerFunc(report.UpdateCommercialGoal)))
+	mux.Handle("DELETE /v1/reports/commercial/goals/{id}", middlewares.LaravelAuth(http.HandlerFunc(report.DeleteCommercialGoal)))
 
 	mux.Handle("POST /v1/funnels_history", middlewares.LaravelAuth(http.HandlerFunc(funnelshistory.CreateOne)))
 	mux.Handle("GET /v1/funnels_history/{id}", middlewares.LaravelAuth(http.HandlerFunc(funnelshistory.GetAll)))
