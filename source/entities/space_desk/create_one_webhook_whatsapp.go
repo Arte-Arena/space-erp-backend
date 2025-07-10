@@ -306,33 +306,151 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if textObj, ok := messages["text"].(map[string]interface{}); ok {
-			if body, ok := textObj["body"].(string); ok {
+		if msgType, ok := messages["type"].(string); ok {
+			filter = bson.M{"message_id": messageFromClientId}
 
-				filter = bson.M{"message_id": messageFromClientId}
+			// monta o update de acordo com o tipo
+			switch msgType {
+			case "text":
+				if textObj, ok := messages["text"].(map[string]interface{}); ok {
+					if body, ok := textObj["body"].(string); ok {
+						update = bson.M{
+							"$set": bson.M{
+								"chat_id": chatId,
+								"type":    "text",
+								"body":    body,
+							},
+							"$setOnInsert": bson.M{"created_at": updatedAt},
+						}
+					}
+				}
 
+			case "image", "video", "audio", "document":
+				media := messages[msgType].(map[string]interface{})
+				base := bson.M{
+					"chat_id":   chatId,
+					"type":      msgType,
+					"media_id":  media["id"].(string),
+					"mime_type": media["mime_type"].(string),
+					"sha256":    media["sha256"].(string),
+				}
+				if cap, ok := media["caption"].(string); ok {
+					base["caption"] = cap
+				}
+				update = bson.M{
+					"$set":         base,
+					"$setOnInsert": bson.M{"created_at": updatedAt},
+				}
+
+			case "sticker":
+				st := messages["sticker"].(map[string]interface{})
 				update = bson.M{
 					"$set": bson.M{
-						"chat_id":                       chatId,
-						"type":                          "text",
-						"message_from_client_timestamp": lastMessageFromClientTimestamp,
-						"message_id":                    messageFromClientId,
-						"body":                          body,
-						"from":                          "client",
-						"by":                            clientPhoneNumber,
+						"chat_id":   chatId,
+						"type":      "sticker",
+						"media_id":  st["id"].(string),
+						"mime_type": st["mime_type"].(string),
+						"sha256":    st["sha256"].(string),
 					},
-					"$setOnInsert": bson.M{
-						"created_at": updatedAt,
-					},
+					"$setOnInsert": bson.M{"created_at": updatedAt},
 				}
 
-				updateOpts := options.UpdateOne().SetUpsert(true)
-				updateResult, err := collection_message.UpdateOne(ctx, filter, update, updateOpts)
-				fmt.Println("UpdateOne result (message):", updateResult)
-
-				if err != nil {
-					log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
+			case "reaction":
+				react := messages["reaction"].(map[string]interface{})
+				update = bson.M{
+					"$set": bson.M{
+						"chat_id":             chatId,
+						"type":                "reaction",
+						"reaction_emoji":      react["emoji"].(string),
+						"reaction_message_id": react["message_id"].(string),
+					},
+					"$setOnInsert": bson.M{"created_at": updatedAt},
 				}
+
+			case "interactive":
+				inter := messages["interactive"].(map[string]interface{})
+				base := bson.M{
+					"chat_id":          chatId,
+					"type":             "interactive",
+					"interactive_type": inter["type"].(string),
+				}
+				if btn, ok := inter["button_reply"].(map[string]interface{}); ok {
+					base["reply_id"] = btn["id"].(string)
+					base["reply_text"] = btn["title"].(string)
+				}
+				if lst, ok := inter["list_reply"].(map[string]interface{}); ok {
+					base["reply_id"] = lst["id"].(string)
+					base["reply_text"] = lst["title"].(string)
+				}
+				update = bson.M{"$set": base, "$setOnInsert": bson.M{"created_at": updatedAt}}
+
+			case "location":
+				loc := messages["location"].(map[string]interface{})
+				update = bson.M{
+					"$set": bson.M{
+						"chat_id":   chatId,
+						"type":      "location",
+						"latitude":  loc["latitude"],
+						"longitude": loc["longitude"],
+						"name":      loc["name"].(string),
+						"address":   loc["address"].(string),
+					},
+					"$setOnInsert": bson.M{"created_at": updatedAt},
+				}
+
+			case "contacts":
+				update = bson.M{
+					"$set": bson.M{
+						"chat_id":  chatId,
+						"type":     "contacts",
+						"contacts": messages["contacts"],
+					},
+					"$setOnInsert": bson.M{"created_at": updatedAt},
+				}
+
+			case "template":
+				tmpl := messages["template"].(map[string]interface{})
+				update = bson.M{
+					"$set": bson.M{
+						"chat_id":       chatId,
+						"type":          "template",
+						"template_name": tmpl["name"].(string),
+						"language":      tmpl["language"].(string),
+						"components":    tmpl["components"],
+					},
+					"$setOnInsert": bson.M{"created_at": updatedAt},
+				}
+
+			default:
+				log.Printf("[CreateOneWebhookWhatsapp] Tipo não tratado: %s", msgType)
+				return
+			}
+
+			// campos comuns a todos os tipos
+			s := update["$set"].(bson.M)
+			s["message_from_client_timestamp"] = lastMessageFromClientTimestamp
+			s["message_id"] = messageFromClientId
+			s["by"] = clientPhoneNumber
+			s["updated_at"] = updatedAt
+
+			// Se houver contexto (reply/citação), salva também
+			if ctxObj, ok := messages["context"].(map[string]interface{}); ok {
+				// context.id e context.from estão documentados como parte do objeto context :contentReference[oaicite:0]{index=0}
+				ctxSet := bson.M{"message_id": ctxObj["id"].(string)}
+				if from, ok2 := ctxObj["from"].(string); ok2 {
+					ctxSet["from"] = from
+				}
+				if t, ok3 := ctxObj["type"].(string); ok3 {
+					ctxSet["type"] = t
+				}
+				s["context"] = ctxSet
+			}
+
+			updateOpts := options.UpdateOne().SetUpsert(true)
+			updateResult, err := collection_message.UpdateOne(ctx, filter, update, updateOpts)
+			fmt.Println("UpdateOne result (message):", updateResult)
+			if err != nil {
+				log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
 			}
 		}
 
