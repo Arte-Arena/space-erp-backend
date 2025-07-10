@@ -7,6 +7,7 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"strconv"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -16,7 +17,7 @@ import (
 func GetOne(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 
-	id, err := bson.ObjectIDFromHex(idStr)
+	oldID, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
 		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.INVALID_USER_ID_FORMAT)
 		return
@@ -36,7 +37,7 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_USERS)
 
-	filter := bson.D{{Key: "_id", Value: id}}
+	filter := bson.D{{Key: "old_id", Value: oldID}}
 
 	user := schemas.User{}
 	err = collection.FindOne(ctx, filter).Decode(&user)
