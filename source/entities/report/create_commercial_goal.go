@@ -31,8 +31,7 @@ func CreateCommercialGoal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	validGoalType := goal.GoalType == schemas.REPORT_GOAL_TYPE_DAILY ||
-		goal.GoalType == schemas.REPORT_GOAL_TYPE_MONTHLY ||
+	validGoalType := goal.GoalType == schemas.REPORT_GOAL_TYPE_MONTHLY ||
 		goal.GoalType == schemas.REPORT_GOAL_TYPE_YEARLY
 	if !validGoalType {
 		utils.SendResponse(w, http.StatusBadRequest, "Tipo de meta inválido", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)

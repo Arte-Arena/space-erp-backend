@@ -13,7 +13,6 @@ const (
 	REPORT_TYPE_ORDERS  = "orders"
 
 	REPORT_GOAL_TYPE_MONTHLY = "monthly"
-	REPORT_GOAL_TYPE_DAILY   = "daily"
 	REPORT_GOAL_TYPE_YEARLY  = "yearly"
 
 	REPORT_GOAL_RELATED_BUDGETS = "budgets"
