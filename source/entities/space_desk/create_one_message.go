@@ -263,24 +263,38 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filter := bson.M{"_id": objID}
-	update := bson.M{
-		"$set": bson.M{
-			"last_message_id":                      wamid,
-			"last_message_excerpt":                 reqBody.Body,
-			"last_message_sender":                  "company",
-			"last_template_from_company_timestamp": fmt.Sprint(now.Unix()),
-			"updated_at":                           time.Now().UTC().Format(time.RFC3339),
-		},
+
+	var update bson.M
+
+	if isTemplate && canSendTemplate {
+		update = bson.M{
+			"$set": bson.M{
+				"last_message_id":                      wamid,
+				"last_message_excerpt":                 reqBody.Body,
+				"last_message_sender":                  "company",
+				"last_template_from_company_timestamp": fmt.Sprint(now.Unix()),
+				"updated_at":                           time.Now().UTC().Format(time.RFC3339),
+			},
+		}
+	} else {
+		update = bson.M{
+			"$set": bson.M{
+				"last_message_id":      wamid,
+				"last_message_excerpt": reqBody.Body,
+				"last_message_sender":  "company",
+				"updated_at":           time.Now().UTC().Format(time.RFC3339),
+			},
+		}
 	}
 	colChat := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
-	updateOpts := options.UpdateOne().SetUpsert(false) //true caso puder criar 
+	updateOpts := options.UpdateOne().SetUpsert(false) //true caso puder criar
 	_, err = colChat.UpdateOne(ctx, filter, update, updateOpts)
 	if err != nil {
 		log.Println("Erro ao inserir evento no MongoDB:", err)
 		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao inserir evento no MongoDB: "+err.Error(), nil, utils.ERROR_TO_INSERT_IN_MONGODB)
 		return
 	}
-	respMap["from"] = "company";
+	respMap["from"] = "company"
 	respMap["to"] = reqBody.To
 	broadcastSpaceDeskMessage(respMap)
 
