@@ -85,6 +85,7 @@ func main() {
 
 	mux.Handle("GET /v1/space-desk/status", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllStatuses)))
 	mux.Handle("GET /v1/space-desk/service-queue", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetServiceQueue)))
+	mux.Handle("GET /v1/desk/queue", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetServiceQueueV2)))
 
 	mux.Handle("POST /v1/space-desk/chat", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneMessage)))
 	mux.Handle("POST /v1/space-desk/message", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneMessage)))
