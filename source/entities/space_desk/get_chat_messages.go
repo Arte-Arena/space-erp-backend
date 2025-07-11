@@ -45,8 +45,6 @@ func GetAllMessagesByChatId(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	skip := (page - 1) * pageSize
-
 	mongoURI := os.Getenv(utils.MONGODB_URI)
 	opts := options.Client().ApplyURI(mongoURI)
 	mongoClient, err := mongo.Connect(opts)
@@ -74,9 +72,18 @@ func GetAllMessagesByChatId(w http.ResponseWriter, r *http.Request) {
 
 	totalPages := int64(math.Ceil(float64(totalItems) / float64(pageSize)))
 
+	reverseSkip := totalItems - (page * pageSize)
+	if reverseSkip < 0 {
+		reverseSkip = 0
+		remainingItems := totalItems - ((page - 1) * pageSize)
+		if remainingItems < pageSize {
+			pageSize = remainingItems
+		}
+	}
+
 	findOptions := options.Find().
 		SetSort(bson.D{{Key: "_id", Value: 1}}).
-		SetSkip(skip).
+		SetSkip(reverseSkip).
 		SetLimit(pageSize)
 
 	cursor, err := collection.Find(ctx, filter, findOptions)
