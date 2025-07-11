@@ -280,7 +280,8 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao inserir evento no MongoDB: "+err.Error(), nil, utils.ERROR_TO_INSERT_IN_MONGODB)
 		return
 	}
-
+	respMap["from"] = "company";
+	respMap["to"] = reqBody.To
 	broadcastSpaceDeskMessage(respMap)
 
 	utils.SendResponse(w, http.StatusCreated, "", respMap, 0)
