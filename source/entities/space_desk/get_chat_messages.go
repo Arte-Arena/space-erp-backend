@@ -4,8 +4,10 @@ import (
 	"api/database"
 	"api/utils"
 	"context"
+	"math"
 	"net/http"
 	"os"
+	"strconv"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -22,6 +24,28 @@ func GetAllMessagesByChatId(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	chatId := r.URL.Query().Get("chat_id")
+	pageStr := r.URL.Query().Get("page")
+	pageSizeStr := r.URL.Query().Get("pageSize")
+
+	page := int64(1)
+	pageSize := int64(25)
+
+	if pageStr != "" {
+		if parsedPage, err := strconv.ParseInt(pageStr, 10, 64); err == nil && parsedPage > 0 {
+			page = parsedPage
+		}
+	}
+
+	if pageSizeStr != "" {
+		if parsedPageSize, err := strconv.ParseInt(pageSizeStr, 10, 64); err == nil && parsedPageSize > 0 {
+			pageSize = parsedPageSize
+			if pageSize > 100 {
+				pageSize = 100
+			}
+		}
+	}
+
+	skip := (page - 1) * pageSize
 
 	mongoURI := os.Getenv(utils.MONGODB_URI)
 	opts := options.Client().ApplyURI(mongoURI)
@@ -34,7 +58,6 @@ func GetAllMessagesByChatId(w http.ResponseWriter, r *http.Request) {
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_MESSAGE)
 
-	findOptions := options.Find().SetSort(bson.D{{Key: "_id", Value: 1}})
 	objectID, err := bson.ObjectIDFromHex(chatId)
 	if err != nil {
 		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.INVALID_CHAT_ID)
@@ -42,6 +65,20 @@ func GetAllMessagesByChatId(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filter := bson.D{{Key: "chat_id", Value: objectID}}
+
+	totalItems, err := collection.CountDocuments(ctx, filter)
+	if err != nil {
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_LEADS_IN_MONGODB)
+		return
+	}
+
+	totalPages := int64(math.Ceil(float64(totalItems) / float64(pageSize)))
+
+	findOptions := options.Find().
+		SetSort(bson.D{{Key: "_id", Value: 1}}).
+		SetSkip(skip).
+		SetLimit(pageSize)
+
 	cursor, err := collection.Find(ctx, filter, findOptions)
 	if err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_LEADS_IN_MONGODB)
@@ -55,5 +92,15 @@ func GetAllMessagesByChatId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SendResponse(w, http.StatusOK, "", allMessages, 0)
+	response := map[string]any{
+		"items": allMessages,
+		"pagination": map[string]any{
+			"page":        page,
+			"page_size":   pageSize,
+			"total_items": totalItems,
+			"total_pages": totalPages,
+		},
+	}
+
+	utils.SendResponse(w, http.StatusOK, "", response, 0)
 }
