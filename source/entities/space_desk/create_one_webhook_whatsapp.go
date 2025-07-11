@@ -51,8 +51,6 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
 	}
 
-	broadcastSpaceDeskMessage(event)
-
 	collection_chat := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
 
 	entryArr, ok := event["entry"].([]interface{})
@@ -97,7 +95,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 	log.Println("<---------------------")
 
 	if statusesArr, ok := value["statuses"].([]any); ok {
-
+		broadcastSpaceDeskMessage(event)
 		fmt.Println("passei pelo status.")
 
 		fmt.Println(statusesArr)
@@ -202,6 +200,8 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else {
+		event["from"] = "client"
+		broadcastSpaceDeskMessage(event)
 
 		// Criar ou Atualizar a collection de chat (quando chega uma mensagem pelo webhook)
 
@@ -253,6 +253,8 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 
 		var lastMessageFromClient string
 
+		msgType, _ := messages["type"].(string)
+
 		if msgType, ok := messages["type"].(string); ok && msgType == "text" {
 			if textObj, ok := messages["text"].(map[string]interface{}); ok {
 				if body, ok := textObj["body"].(string); ok {
@@ -267,6 +269,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 				"name":                               name,
 				"last_message_id":                    messageFromClientId,
 				"last_message_excerpt":               lastMessageFromClient,
+				"last_message_type":                  msgType,
 				"last_message_sender":                "client",
 				"last_message_from_client_timestamp": lastMessageFromClientTimestamp,
 				"updated_at":                         updatedAt,
