@@ -184,7 +184,7 @@ type SpaceDeskChat struct {
 	Description                           string        `bson:"description" json:"description"`
 	LastMessageExcerpt                    string        `bson:"last_message_excerpt" json:"last_message_excerpt"`
 	LastMessageFromClientTimestamp        time.Time     `bson:"last_message_from_client_timestamp" json:"last_message_from_client_timestamp"`
-	LastTemplateFromCompanyTimestamp      time.Time     `bson:"last_template_from_company_timestamp" json:"last_template_from_company_timestamp"`
+	LastTemplateFromCompanyTimestamp      string        `bson:"last_template_from_company_timestamp" json:"last_template_from_company_timestamp"`
 	LastMessageID                         string        `bson:"last_message_id" json:"last_message_id"`
 	LastMessageSender                     string        `bson:"last_message_sender" json:"last_message_sender"`
 	Name                                  string        `bson:"name" json:"name"`
