@@ -151,6 +151,8 @@ func GetServiceQueue(w http.ResponseWriter, r *http.Request) {
 	utils.SendResponse(w, http.StatusOK, "Service queue", priorityQueue, 0)
 }
 
+// ============================================================================================================= \\
+
 func GetServiceQueueV2(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
