@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -240,16 +239,8 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
 		}
-		timestampStr, ok := messages["timestamp"].(string)
-		if !ok {
-			log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
-		}
-		lastMessageTimestampInt, err := strconv.ParseInt(timestampStr, 10, 64)
-		if err != nil {
-			log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
-		}
 
-		lastMessageFromClientTimestamp := time.Unix(lastMessageTimestampInt, 0)
+		now := time.Now().UTC()
 
 		var lastMessageFromClient string
 
@@ -268,10 +259,11 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 			"$set": bson.M{
 				"name":                               name,
 				"last_message_id":                    messageFromClientId,
+				"last_message_timestamp":             fmt.Sprint(now.Unix()),
 				"last_message_excerpt":               lastMessageFromClient,
 				"last_message_type":                  msgType,
 				"last_message_sender":                "client",
-				"last_message_from_client_timestamp": lastMessageFromClientTimestamp,
+				"last_message_from_client_timestamp": fmt.Sprint(now.Unix()),
 				"updated_at":                         updatedAt,
 			},
 			"$setOnInsert": bson.M{
@@ -431,7 +423,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 
 			// campos comuns a todos os tipos
 			s := update["$set"].(bson.M)
-			s["message_from_client_timestamp"] = lastMessageFromClientTimestamp
+			s["message_from_client_timestamp"] = fmt.Sprint(now.Unix())
 			s["message_id"] = messageFromClientId
 			s["by"] = clientPhoneNumber
 			s["updated_at"] = updatedAt
