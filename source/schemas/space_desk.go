@@ -184,6 +184,7 @@ type SpaceDeskChat struct {
 	Description                           string        `bson:"description" json:"description"`
 	LastMessageExcerpt                    string        `bson:"last_message_excerpt" json:"last_message_excerpt"`
 	LastMessageFromClientTimestamp        time.Time     `bson:"last_message_from_client_timestamp" json:"last_message_from_client_timestamp"`
+	LastTemplateFromCompanyTimestamp      string        `bson:"last_template_from_company_timestamp" json:"last_template_from_company_timestamp"`
 	LastMessageID                         string        `bson:"last_message_id" json:"last_message_id"`
 	LastMessageSender                     string        `bson:"last_message_sender" json:"last_message_sender"`
 	Name                                  string        `bson:"name" json:"name"`
@@ -196,7 +197,8 @@ type SpaceDeskChat struct {
 	} `bson:"last_status_from_company_related_to_message_id" json:"last_status_from_company_related_to_message_id"`
 	LastMessage          string    `bson:"last_message" json:"last_message"`
 	LastMessageTimestamp time.Time `bson:"last_message_timestamp" json:"last_message_timestamp"`
-	NeedTemplate         bool      `bson:"need_template" json:"need_template"`
+	Closed               bool      `bson:"closed" json:"closed"`
+	Blocked              bool      `bson:"blocked,omitempty" json:"blocked,omitempty"`
 }
 
 type Group struct {
