@@ -4,7 +4,6 @@ import (
 	"api/database"
 	"api/utils"
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -129,34 +128,11 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 	defer cursor.Close(ctx)
 
 	chats := []schemas.SpaceDeskChat{}
-	twentyFourHoursAgo := time.Now().Add(-24 * time.Hour)
-
 	for cursor.Next(ctx) {
 		var chat schemas.SpaceDeskChat
 		if err := cursor.Decode(&chat); err != nil {
 			continue
 		}
-
-		// Atualiza o status do chat caso tenha mais de 24 horas
-		if !chat.LastMessageTimestamp.IsZero() && chat.LastMessageTimestamp.Before(twentyFourHoursAgo) {
-			if !chat.NeedTemplate {
-				chat.NeedTemplate = true
-			}
-
-			updateFilter := bson.M{"_id": chat.ID}
-			updateData := bson.M{
-				"$set": bson.M{
-					"need_template": true,
-					"updated_at":    time.Now(),
-				},
-			}
-
-			_, err := collection.UpdateOne(ctx, updateFilter, updateData)
-			if err != nil {
-				log.Printf("Erro ao tentar encerrar o chat %s: %v", chat.ID.Hex(), err)
-			}
-		}
-
 		chats = append(chats, chat)
 	}
 
