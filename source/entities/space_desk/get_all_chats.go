@@ -79,40 +79,37 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 	pageStr := query.Get("page")
 	numbers := query["numbers[]"]
 
-	// Definindo valores padrão
+	// valores padrão
 	limit := 100
 	page := 1
 
-	// Parse do "limit"
-	if limitParsed, err := strconv.Atoi(limitStr); err == nil && limitParsed > 0 {
-		if limitParsed > 100 {
-			limit = 100
-		} else {
-			limit = limitParsed
+	if v, err := strconv.Atoi(limitStr); err == nil && v > 0 {
+		if v <= 100 {
+			limit = v
 		}
 	}
-
-	// Parse do "page"
-	if pageParsed, err := strconv.Atoi(pageStr); err == nil && pageParsed > 0 {
-		page = pageParsed
+	if v, err := strconv.Atoi(pageStr); err == nil && v > 0 {
+		page = v
 	}
 
 	skip := (page - 1) * limit
 
+	// conexão Mongo
 	mongoURI := os.Getenv(utils.MONGODB_URI)
 	opts := options.Client().ApplyURI(mongoURI)
-	mongoClient, err := mongo.Connect(opts)
+	client, err := mongo.Connect(opts)
 	if err != nil {
 		utils.SendResponse(w, http.StatusBadGateway, "", nil, utils.CANNOT_CONNECT_TO_MONGODB)
 		return
 	}
-	defer mongoClient.Disconnect(ctx)
+	defer client.Disconnect(ctx)
 
-	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
+	col := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
 
-	filter, hasError := buildFilterFromQueryParams(r)
-	if hasError {
-		utils.SendResponse(w, http.StatusBadRequest, "Parâmetro 'status' inválido. Use 'closed' ou 'opened'", nil, 0)
+	filter, bad := buildFilterFromQueryParams(r)
+	if bad {
+		utils.SendResponse(w, http.StatusBadRequest,
+			"Parâmetro 'status' inválido. Use 'closed' ou 'opened'", nil, 0)
 		return
 	}
 
@@ -121,63 +118,38 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 		SetSkip(int64(skip)).
 		SetLimit(int64(limit))
 
-	cursor, err := collection.Find(ctx, filter, findOptions)
+	cursor, err := col.Find(ctx, filter, findOptions)
 	if err != nil {
-		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_LEADS_IN_MONGODB)
+		// log do erro para diagnóstico
+		log.Printf("[GetAllChats] erro ao executar Find. filter=%v err=%v", filter, err)
+		utils.SendResponse(w, http.StatusInternalServerError,
+			"Erro ao buscar chats: "+err.Error(), nil, utils.CANNOT_FIND_LEADS_IN_MONGODB)
 		return
 	}
 	defer cursor.Close(ctx)
 
-	chats := []schemas.SpaceDeskChat{}
-	twentyFourHoursAgo := time.Now().Add(-24 * time.Hour)
-
-	for cursor.Next(ctx) {
-		var chat schemas.SpaceDeskChat
-		if err := cursor.Decode(&chat); err != nil {
-			continue
-		}
-
-		// Atualiza o status do chat caso tenha mais de 24 horas
-		if !chat.LastMessageTimestamp.IsZero() && chat.LastMessageTimestamp.Before(twentyFourHoursAgo) {
-			if !chat.NeedTemplate {
-				chat.NeedTemplate = true
-			}
-
-			updateFilter := bson.M{"_id": chat.ID}
-			updateData := bson.M{
-				"$set": bson.M{
-					"need_template": true,
-					"updated_at":    time.Now(),
-				},
-			}
-
-			_, err := collection.UpdateOne(ctx, updateFilter, updateData)
-			if err != nil {
-				log.Printf("Erro ao tentar encerrar o chat %s: %v", chat.ID.Hex(), err)
-			}
-		}
-
-		chats = append(chats, chat)
+	var chats []schemas.SpaceDeskChat
+	if err := cursor.All(ctx, &chats); err != nil {
+		log.Printf("[GetAllChats] erro no cursor.All: %v", err)
+		utils.SendResponse(w, http.StatusInternalServerError,
+			"Erro ao ler chats: "+err.Error(), nil, utils.CANNOT_FIND_LEADS_IN_MONGODB)
+		return
 	}
 
-	// Se numbers[] foi passado, filtra apenas os chats cujos números, só com dígitos, batem com algum
+	// filtro por numbers[] se necessário
 	if len(numbers) > 0 {
-		numbersMap := make(map[string]bool)
+		nMap := make(map[string]bool, len(numbers))
 		for _, n := range numbers {
-			numbersMap[n] = true
+			nMap[n] = true
 		}
-		filteredChats := make([]schemas.SpaceDeskChat, 0, len(chats))
-		for _, chat := range chats {
-			phoneDigits := onlyDigits(chat.ClientPhoneNumber)
-			if numbersMap[phoneDigits] {
-				filteredChats = append(filteredChats, chat)
+		var out []schemas.SpaceDeskChat
+		for _, c := range chats {
+			if nMap[onlyDigits(c.ClientPhoneNumber)] {
+				out = append(out, c)
 			}
 		}
-		chats = filteredChats
+		chats = out
 	}
 
 	utils.SendResponse(w, http.StatusOK, "Chats encontrados com sucesso", chats, 0)
 }
-
-// GET /api/chats?limit=10&page=2&until=30
-// GET /api/chats?numbers[]=11999998888&numbers[]=65999998888
