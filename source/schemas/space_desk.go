@@ -184,8 +184,8 @@ type SpaceDeskChat struct {
 	Description                           string        `bson:"description" json:"description"`
 	LastMessageExcerpt                    string        `bson:"last_message_excerpt" json:"last_message_excerpt"`
 	LastMessageType                       string        `bson:"last_message_type" json:"last_message_type"`
-	LastMessageFromClientTimestamp        time.Time     `bson:"last_message_from_client_timestamp" json:"last_message_from_client_timestamp"`
-	LastTemplateFromCompanyTimestamp      string        `bson:"last_template_from_company_timestamp" json:"last_template_from_company_timestamp"`
+	LastMessageFromClientTimestamp        any           `bson:"last_message_from_client_timestamp" json:"last_message_from_client_timestamp"`
+	LastTemplateFromCompanyTimestamp      any           `bson:"last_template_from_company_timestamp" json:"last_template_from_company_timestamp"`
 	LastMessageID                         string        `bson:"last_message_id" json:"last_message_id"`
 	LastMessageSender                     string        `bson:"last_message_sender" json:"last_message_sender"`
 	Name                                  string        `bson:"name" json:"name"`
@@ -193,13 +193,13 @@ type SpaceDeskChat struct {
 	UpdatedAt                             time.Time     `bson:"updated_at" json:"updated_at"`
 	UserID                                string        `bson:"user_id" json:"user_id"`
 	LastStatusFromCompanyRelatedToMessage struct {
-		Timestamp string `bson:"timestamp" json:"timestamp"`
+		Timestamp any    `bson:"timestamp" json:"timestamp"`
 		Value     string `bson:"value" json:"value"`
 	} `bson:"last_status_from_company_related_to_message_id" json:"last_status_from_company_related_to_message_id"`
-	LastMessage          string    `bson:"last_message" json:"last_message"`
-	LastMessageTimestamp time.Time `bson:"last_message_timestamp" json:"last_message_timestamp"`
-	Closed               bool      `bson:"closed" json:"closed"`
-	Blocked              bool      `bson:"blocked,omitempty" json:"blocked,omitempty"`
+	LastMessage          string `bson:"last_message" json:"last_message"`
+	LastMessageTimestamp any    `bson:"last_message_timestamp" json:"last_message_timestamp"`
+	Closed               bool   `bson:"closed" json:"closed"`
+	Blocked              bool   `bson:"blocked,omitempty" json:"blocked,omitempty"`
 }
 
 type Group struct {
