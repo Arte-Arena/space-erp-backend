@@ -85,23 +85,45 @@ func GetOrdersSalesValueByType(from, until string) (map[string]float64, error) {
 				orderTotal += p.Preco * qty
 			}
 		} else {
-			if tinyMap, ok := doc["tiny"].(bson.M); ok {
-				if valAny, ok2 := tinyMap["total_produtos"]; ok2 {
-					switch v := valAny.(type) {
-					case float64:
-						orderTotal = v
-					case int:
-						orderTotal = float64(v)
-					case int32:
-						orderTotal = float64(v)
-					case int64:
-						orderTotal = float64(v)
-					case string:
-						if f, err := strconv.ParseFloat(v, 64); err == nil {
-							orderTotal = f
+			getTotalProdutos := func(tiny interface{}) float64 {
+				var valAny interface{}
+				var found bool
+
+				if tinyMap, ok := tiny.(bson.M); ok {
+					valAny, found = tinyMap["total_produtos"]
+				} else if tinyDoc, ok := tiny.(bson.D); ok {
+					for _, elem := range tinyDoc {
+						if elem.Key == "total_produtos" {
+							valAny = elem.Value
+							found = true
+							break
 						}
 					}
 				}
+
+				if !found {
+					return 0
+				}
+
+				switch v := valAny.(type) {
+				case float64:
+					return v
+				case int:
+					return float64(v)
+				case int32:
+					return float64(v)
+				case int64:
+					return float64(v)
+				case string:
+					if f, err := strconv.ParseFloat(v, 64); err == nil {
+						return f
+					}
+				}
+				return 0
+			}
+
+			if tiny, ok := doc["tiny"]; ok {
+				orderTotal = getTotalProdutos(tiny)
 			}
 		}
 
