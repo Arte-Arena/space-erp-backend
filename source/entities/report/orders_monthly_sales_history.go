@@ -4,6 +4,7 @@ import (
 	"api/database"
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -13,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-func GetOrdersSalesValueByStatus(from, until string) (map[string]float64, error) {
+func GetOrdersMonthlySalesHistory(from, until string) (map[string]float64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
 
@@ -46,7 +47,7 @@ func GetOrdersSalesValueByStatus(from, until string) (map[string]float64, error)
 	}
 
 	findOpts := options.Find().SetProjection(bson.M{
-		"status":               1,
+		"created_at":           1,
 		"products_list_legacy": 1,
 		"tiny.valor":           1,
 	})
@@ -70,25 +71,32 @@ func GetOrdersSalesValueByStatus(from, until string) (map[string]float64, error)
 			continue
 		}
 
-		status, _ := doc["status"].(string)
-		if status == "" {
-			status = "Sem status"
-		}
-
-		listStr, _ := doc["products_list_legacy"].(string)
-		var orderTotal float64
-
-		if listStr != "" {
-			var products []legacyProduct
-			if err := json.Unmarshal([]byte(listStr), &products); err != nil {
+		var createdAt time.Time
+		switch v := doc["created_at"].(type) {
+		case time.Time:
+			createdAt = v
+		default:
+			if getter, ok := v.(interface{ Time() time.Time }); ok {
+				createdAt = getter.Time()
+			} else if ms, ok := v.(int64); ok {
+				createdAt = time.UnixMilli(ms)
+			} else {
 				continue
 			}
-			for _, p := range products {
-				qty := p.Quantidade
-				if qty == 0 {
-					qty = 1
+		}
+
+		var orderTotal float64
+
+		if listStr, _ := doc["products_list_legacy"].(string); listStr != "" {
+			var products []legacyProduct
+			if err := json.Unmarshal([]byte(listStr), &products); err == nil {
+				for _, p := range products {
+					qty := p.Quantidade
+					if qty == 0 {
+						qty = 1
+					}
+					orderTotal += p.Preco * qty
 				}
-				orderTotal += p.Preco * qty
 			}
 		} else {
 			if tinyMap, ok := doc["tiny"].(bson.M); ok {
@@ -109,7 +117,8 @@ func GetOrdersSalesValueByStatus(from, until string) (map[string]float64, error)
 			continue
 		}
 
-		result[status] += orderTotal
+		key := fmt.Sprintf("%04d-%02d", createdAt.Year(), createdAt.Month())
+		result[key] += orderTotal
 	}
 
 	if err := cursor.Err(); err != nil {

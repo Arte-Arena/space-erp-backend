@@ -222,6 +222,42 @@ func GetByQuery(w http.ResponseWriter, r *http.Request) {
 			}
 			responseData["orders_sales_value_by_type"] = v
 		}
+
+		if _, ok := params["orders_total_sales_value"]; ok {
+			var v float64
+			v, err = GetOrdersTotalSalesValue(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["orders_total_sales_value"] = v
+		}
+
+		if _, ok := params["orders_monthly_sales_history"]; ok {
+			var v map[string]float64
+			v, err = GetOrdersMonthlySalesHistory(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["orders_monthly_sales_history"] = v
+		}
+
+		if _, ok := params["orders_daily_sales"]; ok {
+			var v map[string]int64
+			v, err = GetOrdersDailySales(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["orders_daily_sales"] = v
+		}
+
+		if _, ok := params["orders_daily_sales_value"]; ok {
+			var v map[string]float64
+			v, err = GetOrdersDailySalesValue(period[0], period[1])
+			if handleErr(err) {
+				return
+			}
+			responseData["orders_daily_sales_value"] = v
+		}
 	}
 
 	if len(responseData) == 0 {
