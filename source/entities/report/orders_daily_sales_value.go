@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -48,6 +49,7 @@ func GetOrdersDailySalesValue(from, until string) (map[string]float64, error) {
 	findOpts := options.Find().SetProjection(bson.M{
 		"created_at":           1,
 		"products_list_legacy": 1,
+		"tiny.valor":           1,
 	})
 
 	cursor, err := collection.Find(ctx, filter, findOpts)
@@ -75,22 +77,37 @@ func GetOrdersDailySalesValue(from, until string) (map[string]float64, error) {
 		}
 
 		listStr, _ := doc["products_list_legacy"].(string)
-		if listStr == "" {
-			continue
-		}
-
-		var products []legacyProduct
-		if err := json.Unmarshal([]byte(listStr), &products); err != nil {
-			continue
-		}
-
 		var orderTotal float64
-		for _, p := range products {
-			qty := p.Quantidade
-			if qty == 0 {
-				qty = 1
+
+		if listStr != "" {
+			var products []legacyProduct
+			if err := json.Unmarshal([]byte(listStr), &products); err != nil {
+				continue
 			}
-			orderTotal += p.Preco * qty
+			for _, p := range products {
+				qty := p.Quantidade
+				if qty == 0 {
+					qty = 1
+				}
+				orderTotal += p.Preco * qty
+			}
+		} else {
+			if tinyMap, ok := doc["tiny"].(bson.M); ok {
+				if valAny, ok2 := tinyMap["valor"]; ok2 {
+					switch v := valAny.(type) {
+					case float64:
+						orderTotal = v
+					case string:
+						if f, err := strconv.ParseFloat(v, 64); err == nil {
+							orderTotal = f
+						}
+					}
+				}
+			}
+		}
+
+		if orderTotal == 0 {
+			continue
 		}
 
 		key := fmt.Sprintf("%04d-%02d-%02d", createdAt.Year(), createdAt.Month(), createdAt.Day())
