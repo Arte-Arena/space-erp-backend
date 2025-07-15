@@ -269,9 +269,10 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	if isTemplate && canSendTemplate {
 		update = bson.M{
 			"$set": bson.M{
-				"last_message_id":                      wamid,
-				"last_message_excerpt":                 reqBody.Body,
-				"last_message_sender":                  "company",
+				"last_message_id":        wamid,
+				"last_message_excerpt":   reqBody.Body,
+				"last_message_sender":    "company",
+				"last_message_timestamp": fmt.Sprint(now.Unix()),
 				"last_template_from_company_timestamp": fmt.Sprint(now.Unix()),
 				"updated_at":                           time.Now().UTC().Format(time.RFC3339),
 			},
@@ -279,7 +280,8 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	} else {
 		update = bson.M{
 			"$set": bson.M{
-				"last_message_id":      wamid,
+				"last_message_id":        wamid,
+				"last_message_timestamp": fmt.Sprint(now.Unix()),
 				"last_message_excerpt": reqBody.Body,
 				"last_message_sender":  "company",
 				"updated_at":           time.Now().UTC().Format(time.RFC3339),
