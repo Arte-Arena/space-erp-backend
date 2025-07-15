@@ -71,9 +71,18 @@ func GetOrdersMonthlySalesHistory(from, until string) (map[string]float64, error
 			continue
 		}
 
-		createdAt, ok := doc["created_at"].(time.Time)
-		if !ok {
-			continue
+		var createdAt time.Time
+		switch v := doc["created_at"].(type) {
+		case time.Time:
+			createdAt = v
+		default:
+			if getter, ok := v.(interface{ Time() time.Time }); ok {
+				createdAt = getter.Time()
+			} else if ms, ok := v.(int64); ok {
+				createdAt = time.UnixMilli(ms)
+			} else {
+				continue
+			}
 		}
 
 		var orderTotal float64
