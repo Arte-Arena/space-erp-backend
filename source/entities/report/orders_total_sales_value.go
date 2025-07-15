@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-func GetOrdersSalesValueByStatus(from, until string) (map[string]float64, error) {
+func GetOrdersTotalSalesValue(from, until string) (float64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
 
@@ -21,7 +21,7 @@ func GetOrdersSalesValueByStatus(from, until string) (map[string]float64, error)
 	opts := options.Client().ApplyURI(mongoURI)
 	mongoClient, err := mongo.Connect(opts)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	defer mongoClient.Disconnect(ctx)
 
@@ -46,14 +46,13 @@ func GetOrdersSalesValueByStatus(from, until string) (map[string]float64, error)
 	}
 
 	findOpts := options.Find().SetProjection(bson.M{
-		"status":               1,
 		"products_list_legacy": 1,
 		"tiny.valor":           1,
 	})
 
 	cursor, err := collection.Find(ctx, filter, findOpts)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	defer cursor.Close(ctx)
 
@@ -62,7 +61,7 @@ func GetOrdersSalesValueByStatus(from, until string) (map[string]float64, error)
 		Quantidade float64 `json:"quantidade"`
 	}
 
-	result := make(map[string]float64)
+	var totalSales float64
 
 	for cursor.Next(ctx) {
 		var doc bson.M
@@ -70,25 +69,18 @@ func GetOrdersSalesValueByStatus(from, until string) (map[string]float64, error)
 			continue
 		}
 
-		status, _ := doc["status"].(string)
-		if status == "" {
-			status = "Sem status"
-		}
-
-		listStr, _ := doc["products_list_legacy"].(string)
 		var orderTotal float64
 
-		if listStr != "" {
+		if listStr, _ := doc["products_list_legacy"].(string); listStr != "" {
 			var products []legacyProduct
-			if err := json.Unmarshal([]byte(listStr), &products); err != nil {
-				continue
-			}
-			for _, p := range products {
-				qty := p.Quantidade
-				if qty == 0 {
-					qty = 1
+			if err := json.Unmarshal([]byte(listStr), &products); err == nil {
+				for _, p := range products {
+					qty := p.Quantidade
+					if qty == 0 {
+						qty = 1
+					}
+					orderTotal += p.Preco * qty
 				}
-				orderTotal += p.Preco * qty
 			}
 		} else {
 			if tinyMap, ok := doc["tiny"].(bson.M); ok {
@@ -105,16 +97,12 @@ func GetOrdersSalesValueByStatus(from, until string) (map[string]float64, error)
 			}
 		}
 
-		if orderTotal == 0 {
-			continue
-		}
-
-		result[status] += orderTotal
+		totalSales += orderTotal
 	}
 
 	if err := cursor.Err(); err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	return result, nil
+	return totalSales, nil
 }
