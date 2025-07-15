@@ -79,8 +79,8 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 
 	colChats := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
 	var chatDoc struct {
-		ClientePhoneNumber string    `bson:"cliente_phone_number"`
-		LastMessage        time.Time `bson:"last_message_timestamp"`
+		ClientePhoneNumber string `bson:"cliente_phone_number"`
+		LastMessage        any    `bson:"last_message_timestamp"`
 	}
 
 	objID, err := bson.ObjectIDFromHex(reqBody.To)
@@ -104,7 +104,13 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	recipient := chatDoc.ClientePhoneNumber
 
 	isTemplate := reqBody.Type == "template"
-	canSendTemplate := ShouldSendAsTemplate(chatDoc.LastMessage)
+	var lastMsgTime time.Time
+	if t, ok := chatDoc.LastMessage.(time.Time); ok {
+		lastMsgTime = t
+	} else {
+		lastMsgTime = time.Time{} // fallback to zero value if not time.Time
+	}
+	canSendTemplate := ShouldSendAsTemplate(lastMsgTime)
 
 	tipo := "Text"
 	var payload map[string]any
@@ -269,10 +275,10 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	if isTemplate && canSendTemplate {
 		update = bson.M{
 			"$set": bson.M{
-				"last_message_id":        wamid,
-				"last_message_excerpt":   reqBody.Body,
-				"last_message_sender":    "company",
-				"last_message_timestamp": fmt.Sprint(now.Unix()),
+				"last_message_id":                      wamid,
+				"last_message_excerpt":                 reqBody.Body,
+				"last_message_sender":                  "company",
+				"last_message_timestamp":               fmt.Sprint(now.Unix()),
 				"last_template_from_company_timestamp": fmt.Sprint(now.Unix()),
 				"updated_at":                           time.Now().UTC().Format(time.RFC3339),
 			},
@@ -282,9 +288,9 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 			"$set": bson.M{
 				"last_message_id":        wamid,
 				"last_message_timestamp": fmt.Sprint(now.Unix()),
-				"last_message_excerpt": reqBody.Body,
-				"last_message_sender":  "company",
-				"updated_at":           time.Now().UTC().Format(time.RFC3339),
+				"last_message_excerpt":   reqBody.Body,
+				"last_message_sender":    "company",
+				"updated_at":             time.Now().UTC().Format(time.RFC3339),
 			},
 		}
 	}
