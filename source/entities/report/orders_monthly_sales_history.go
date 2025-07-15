@@ -46,13 +46,7 @@ func GetOrdersMonthlySalesHistory(from, until string) (map[string]float64, error
 		}
 	}
 
-	findOpts := options.Find().SetProjection(bson.M{
-		"created_at":           1,
-		"products_list_legacy": 1,
-		"tiny.total_produtos":  1,
-	})
-
-	cursor, err := collection.Find(ctx, filter, findOpts)
+	cursor, err := collection.Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
