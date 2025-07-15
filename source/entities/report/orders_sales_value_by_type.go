@@ -48,7 +48,7 @@ func GetOrdersSalesValueByType(from, until string) (map[string]float64, error) {
 	findOpts := options.Find().SetProjection(bson.M{
 		"type":                 1,
 		"products_list_legacy": 1,
-		"tiny.valor":           1,
+		"tiny.total_produtos":  1,
 	})
 
 	cursor, err := collection.Find(ctx, filter, findOpts)
@@ -92,10 +92,16 @@ func GetOrdersSalesValueByType(from, until string) (map[string]float64, error) {
 			}
 		} else {
 			if tinyMap, ok := doc["tiny"].(bson.M); ok {
-				if valAny, ok2 := tinyMap["valor"]; ok2 {
+				if valAny, ok2 := tinyMap["total_produtos"]; ok2 {
 					switch v := valAny.(type) {
 					case float64:
 						orderTotal = v
+					case int:
+						orderTotal = float64(v)
+					case int32:
+						orderTotal = float64(v)
+					case int64:
+						orderTotal = float64(v)
 					case string:
 						if f, err := strconv.ParseFloat(v, 64); err == nil {
 							orderTotal = f
