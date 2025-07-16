@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"time"
 
@@ -114,7 +115,7 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	findOptions := options.Find().
-		SetSort(bson.D{{Key: "_id", Value: -1}}).
+		SetSort(bson.D{{Key: "last_message_timestamp", Value: -1}}).
 		SetSkip(int64(skip)).
 		SetLimit(int64(limit))
 
@@ -150,6 +151,36 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 		}
 		chats = out
 	}
+
+	// Ordena pelo valor numérico do timestamp (quanto maior, mais recente)
+	sort.Slice(chats, func(i, j int) bool {
+		var ti, tj int64
+		switch v := chats[i].LastMessageTimestamp.(type) {
+		case int64:
+			ti = v
+		case int:
+			ti = int64(v)
+		case float64:
+			ti = int64(v)
+		case string:
+			if parsed, err := strconv.ParseInt(v, 10, 64); err == nil {
+				ti = parsed
+			}
+		}
+		switch v := chats[j].LastMessageTimestamp.(type) {
+		case int64:
+			tj = v
+		case int:
+			tj = int64(v)
+		case float64:
+			tj = int64(v)
+		case string:
+			if parsed, err := strconv.ParseInt(v, 10, 64); err == nil {
+				tj = parsed
+			}
+		}
+		return ti > tj 
+	})
 
 	utils.SendResponse(w, http.StatusOK, "Chats encontrados com sucesso", chats, 0)
 }
