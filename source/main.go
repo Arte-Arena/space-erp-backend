@@ -88,12 +88,12 @@ func main() {
 	mux.Handle("GET /v1/space-desk/service-queue", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetServiceQueue)))
 	mux.Handle("GET /v1/desk/queue", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetServiceQueueV2)))
 
-	mux.Handle("POST /v1/space-desk/chat", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneMessage)))
 	mux.Handle("POST /v1/space-desk/message", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneMessage)))
 	mux.Handle("POST /v1/space-desk/media", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneMedia)))
 	mux.Handle("POST /v1/space-desk/order-details", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOrderDetails)))
 	mux.Handle("POST /v1/space-desk/order-template", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOrderDetails)))
 	mux.Handle("POST /v1/space-desk/pix-message", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreatePixMessage)))
+	mux.Handle("POST /v1/space-desk/simple-pix-message", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateSimplePixMessage)))
 
 	mux.Handle("GET /v1/space-desk/media-base64", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.HandlerMediaBase64)))
 	mux.Handle("GET /v1/space-desk/media-download", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.HandlerMediaDownload)))
