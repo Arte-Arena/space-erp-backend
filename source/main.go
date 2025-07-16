@@ -57,6 +57,7 @@ func main() {
 	mux.Handle("PATCH /v1/users/{id}", middlewares.LaravelAuth(http.HandlerFunc(users.UpdateOne)))
 	mux.Handle("GET /v1/users/commercial/budgets", middlewares.LaravelAuth(http.HandlerFunc(users.GetCommercialBudgets)))
 	mux.Handle("GET /v1/users/commercial/reports/budgets", middlewares.LaravelAuth(http.HandlerFunc(users.GetCommercialBudgetsReport)))
+	mux.Handle("GET /v1/users/commercial/reports/orders", middlewares.LaravelAuth(http.HandlerFunc(users.GetCommercialOrdersReport)))
 	mux.Handle("GET /v1/users/superadmin/reports/commercial", middlewares.LaravelAuth(http.HandlerFunc(users.GetSuperadminSellersPerformanceReport)))
 
 	mux.Handle("GET /v1/budgets", middlewares.LaravelAuth(http.HandlerFunc(budgets.GetAll)))
