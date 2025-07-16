@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 
@@ -57,6 +58,26 @@ func GetOrdersTotalSalesValue(from, until string) (float64, error) {
 	}
 
 	var totalSales float64
+
+	isValidTinySituacao := func(tiny interface{}) bool {
+		var situacao string
+
+		if tinyMap, ok := tiny.(bson.M); ok {
+			if s, found := tinyMap["situacao"]; found {
+				situacao, _ = s.(string)
+			}
+		} else if tinyDoc, ok := tiny.(bson.D); ok {
+			for _, elem := range tinyDoc {
+				if elem.Key == "situacao" {
+					situacao, _ = elem.Value.(string)
+					break
+				}
+			}
+		}
+
+		excludedStatuses := []string{"Dados incompletos", "Não entregue", "Cancelado"}
+		return !slices.Contains(excludedStatuses, situacao)
+	}
 
 	for cursor.Next(ctx) {
 		var doc bson.M
@@ -116,7 +137,9 @@ func GetOrdersTotalSalesValue(from, until string) (float64, error) {
 			}
 
 			if tiny, ok := doc["tiny"]; ok {
-				orderTotal = getTotalProdutos(tiny)
+				if isValidTinySituacao(tiny) {
+					orderTotal = getTotalProdutos(tiny)
+				}
 			}
 		}
 
