@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 
@@ -55,6 +56,26 @@ func GetOrdersMonthlySalesHistory(from, until string) (map[string]float64, error
 	type legacyProduct struct {
 		Preco      float64 `json:"preco"`
 		Quantidade float64 `json:"quantidade"`
+	}
+
+	isValidTinySituacao := func(tiny interface{}) bool {
+		var situacao string
+
+		if tinyMap, ok := tiny.(bson.M); ok {
+			if s, found := tinyMap["situacao"]; found {
+				situacao, _ = s.(string)
+			}
+		} else if tinyDoc, ok := tiny.(bson.D); ok {
+			for _, elem := range tinyDoc {
+				if elem.Key == "situacao" {
+					situacao, _ = elem.Value.(string)
+					break
+				}
+			}
+		}
+
+		excludedStatuses := []string{"Dados incompletos", "Não entregue", "Cancelado"}
+		return !slices.Contains(excludedStatuses, situacao)
 	}
 
 	result := make(map[string]float64)
@@ -131,7 +152,9 @@ func GetOrdersMonthlySalesHistory(from, until string) (map[string]float64, error
 			}
 
 			if tiny, ok := doc["tiny"]; ok {
-				orderTotal = getTotalProdutos(tiny)
+				if isValidTinySituacao(tiny) {
+					orderTotal = getTotalProdutos(tiny)
+				}
 			}
 		}
 
