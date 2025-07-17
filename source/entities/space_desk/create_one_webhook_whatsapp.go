@@ -135,25 +135,20 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 
 		// Buscar o lastMessageId já gravado na collection de chat
 		var chatDoc struct {
-			LastMessageIdFromClient string `bson:"last_message_id"`
-			Name                    string `bson:"name"`
+			last_message        string `bson:"last_message_id"`
+			last_message_sender string `bson:"last_message_sender"`
+			Name                string `bson:"name"`
 		}
 		err := collection_chat.FindOne(ctx, filter).Decode(&chatDoc)
 		lastMessageIdFromDB := ""
 		if err == nil {
-			lastMessageIdFromDB = chatDoc.LastMessageIdFromClient
+			lastMessageIdFromDB = chatDoc.last_message
 			// Log do lastMessageId já gravado
 			fmt.Println("lastMessageId já gravado:", lastMessageIdFromDB)
 		}
 
 		// Atualizar a collection de chat
-
-		// fmt.Println("============>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> statusMessageId:", statusMessageId)
-
-		fmt.Printf("statusMessageId: %T\n", statusMessageId)
-		fmt.Printf("lastMessageIdFromDB: %T\n", lastMessageIdFromDB)
-
-		if statusMessageId == lastMessageIdFromDB {
+		if statusMessageId == lastMessageIdFromDB && chatDoc.last_message_sender == "company" {
 			update := bson.M{
 				"$set": bson.M{
 					"last_status_from_company_related_to_message_id": bson.M{
@@ -164,10 +159,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 				},
 			}
 			updateOpts := options.UpdateOne().SetUpsert(true)
-			updateResult, err := collection_chat.UpdateOne(ctx, filter, update, updateOpts)
-
-			fmt.Println("UpdateOne result (status):", updateResult)
-			fmt.Println("------------------------>>> status:", status)
+			_, err := collection_chat.UpdateOne(ctx, filter, update, updateOpts)
 
 			if err != nil {
 				log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
@@ -175,11 +167,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Atualizar a collection de message
-
-		fmt.Println("------------------>>        passei pelo message para atualizar a collection de message")
-
 		collection_message := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_MESSAGE)
-
 		filter = bson.M{"message_id": messageId}
 
 		update := bson.M{
@@ -190,9 +178,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 		}
 
 		updateOpts := options.UpdateOne()
-		updateResult, err := collection_message.UpdateOne(ctx, filter, update, updateOpts)
-
-		log.Println("---------------->>>>>            UpdateOne result (message):", updateResult)
+		_, err = collection_message.UpdateOne(ctx, filter, update, updateOpts)
 
 		if err != nil {
 			log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
