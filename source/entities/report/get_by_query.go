@@ -4,6 +4,7 @@ import (
 	"api/schemas"
 	"api/utils"
 	"net/http"
+	"strconv"
 )
 
 func GetByQuery(w http.ResponseWriter, r *http.Request) {
@@ -93,9 +94,16 @@ func GetByQuery(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if reportType == schemas.REPORT_TYPE_BUDGETS {
+		notApproved := false
+		if notApprovedParam := params.Get("not_approved"); notApprovedParam != "" {
+			if parsed, err := strconv.ParseBool(notApprovedParam); err == nil {
+				notApproved = parsed
+			}
+		}
+	
 		if _, ok := params["budgets_converted_sales"]; ok {
 			var v int64
-			v, err = GetBudgetsConvertedSales(period[0], period[1])
+			v, err = GetBudgetsConvertedSales(period[0], period[1], notApproved)
 			if handleErr(err) {
 				return
 			}
@@ -104,7 +112,7 @@ func GetByQuery(w http.ResponseWriter, r *http.Request) {
 
 		if _, ok := params["budgets_total_sales_value"]; ok {
 			var v float64
-			v, err = GetBudgetsTotalSalesValue(period[0], period[1])
+			v, err = GetBudgetsTotalSalesValue(period[0], period[1], notApproved)
 			if handleErr(err) {
 				return
 			}
@@ -113,7 +121,7 @@ func GetByQuery(w http.ResponseWriter, r *http.Request) {
 
 		if _, ok := params["budgets_average_ticket"]; ok {
 			var v float64
-			v, err = GetBudgetsAverageTicket(period[0], period[1])
+			v, err = GetBudgetsAverageTicket(period[0], period[1], notApproved)
 			if handleErr(err) {
 				return
 			}
@@ -122,7 +130,7 @@ func GetByQuery(w http.ResponseWriter, r *http.Request) {
 
 		if _, ok := params["budgets_monthly_sales_history"]; ok {
 			var v map[string]float64
-			v, err = GetBudgetsMonthlySalesHistory(period[0], period[1])
+			v, err = GetBudgetsMonthlySalesHistory(period[0], period[1], notApproved)
 			if handleErr(err) {
 				return
 			}
@@ -131,7 +139,7 @@ func GetByQuery(w http.ResponseWriter, r *http.Request) {
 
 		if _, ok := params["budgets_sales_value_by_segment"]; ok {
 			var v map[string]float64
-			v, err = GetBudgetsSalesValueBySegment(period[0], period[1])
+			v, err = GetBudgetsSalesValueBySegment(period[0], period[1], notApproved)
 			if handleErr(err) {
 				return
 			}

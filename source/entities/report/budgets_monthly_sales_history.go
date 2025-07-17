@@ -3,6 +3,7 @@ package report
 import (
 	"api/database"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -12,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-func GetBudgetsMonthlySalesHistory(from, until string) (map[string]float64, error) {
+func GetBudgetsMonthlySalesHistory(from, until string, notApproved bool) (map[string]float64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
 
@@ -26,7 +27,13 @@ func GetBudgetsMonthlySalesHistory(from, until string) (map[string]float64, erro
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_BUDGETS)
 
-	filter := bson.D{{Key: "approved", Value: true}}
+	var filter bson.D
+	if notApproved {
+		filter = bson.D{{Key: "approved", Value: false}}
+	} else {
+		filter = bson.D{{Key: "approved", Value: true}}
+	}
+
 	if from != "" || until != "" {
 		dateFilter := bson.D{}
 		if from != "" {
@@ -42,6 +49,65 @@ func GetBudgetsMonthlySalesHistory(from, until string) (map[string]float64, erro
 		if len(dateFilter) > 0 {
 			filter = append(filter, bson.E{Key: "created_at", Value: dateFilter})
 		}
+	}
+
+	if notApproved {
+		cursor, err := collection.Find(ctx, filter)
+		if err != nil {
+			return nil, err
+		}
+		defer cursor.Close(ctx)
+
+		type Product struct {
+			Preco      float64 `json:"preco"`
+			Quantidade int     `json:"quantidade"`
+		}
+
+		result := make(map[string]float64)
+		for cursor.Next(ctx) {
+			var doc bson.M
+			if err := cursor.Decode(&doc); err != nil {
+				continue
+			}
+
+			var createdAt time.Time
+			if createdAtRaw, ok := doc["created_at"]; ok {
+				switch v := createdAtRaw.(type) {
+				case time.Time:
+					createdAt = v
+				case bson.DateTime:
+					createdAt = v.Time()
+				}
+			}
+
+			if createdAt.IsZero() {
+				continue
+			}
+
+			key := fmt.Sprintf("%04d-%02d", createdAt.Year(), int(createdAt.Month()))
+
+			oldProductsList, _ := doc["old_products_list"].(string)
+			var products []Product
+			budgetTotal := 0.0
+			if oldProductsList != "" {
+				_ = json.Unmarshal([]byte(oldProductsList), &products)
+				for _, p := range products {
+					budgetTotal += p.Preco * float64(p.Quantidade)
+				}
+			}
+
+			delivery, _ := doc["delivery"].(bson.M)
+			if delivery != nil {
+				if price, ok := delivery["price"].(float64); ok {
+					budgetTotal += price
+				}
+			}
+			result[key] += budgetTotal
+		}
+		if err := cursor.Err(); err != nil {
+			return nil, err
+		}
+		return result, nil
 	}
 
 	pipeline := bson.A{
