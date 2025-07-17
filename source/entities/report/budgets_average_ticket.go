@@ -3,6 +3,7 @@ package report
 import (
 	"api/database"
 	"context"
+	"encoding/json"
 	"os"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-func GetBudgetsAverageTicket(from, until string) (float64, error) {
+func GetBudgetsAverageTicket(from, until string, notApproved bool) (float64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
 
@@ -25,7 +26,13 @@ func GetBudgetsAverageTicket(from, until string) (float64, error) {
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_BUDGETS)
 
-	filter := bson.D{{Key: "approved", Value: true}}
+	var filter bson.D
+	if notApproved {
+		filter = bson.D{{Key: "approved", Value: false}}
+	} else {
+		filter = bson.D{{Key: "approved", Value: true}}
+	}
+
 	if from != "" || until != "" {
 		dateFilter := bson.D{}
 		if from != "" {
@@ -41,6 +48,56 @@ func GetBudgetsAverageTicket(from, until string) (float64, error) {
 		if len(dateFilter) > 0 {
 			filter = append(filter, bson.E{Key: "created_at", Value: dateFilter})
 		}
+	}
+
+	if notApproved {
+		cursor, err := collection.Find(ctx, filter)
+		if err != nil {
+			return 0, err
+		}
+		defer cursor.Close(ctx)
+
+		type Product struct {
+			Preco      float64 `json:"preco"`
+			Quantidade int     `json:"quantidade"`
+		}
+
+		total := 0.0
+		count := 0
+		for cursor.Next(ctx) {
+			var doc bson.M
+			if err := cursor.Decode(&doc); err != nil {
+				continue
+			}
+
+			oldProductsList, _ := doc["old_products_list"].(string)
+			var products []Product
+			budgetTotal := 0.0
+			if oldProductsList != "" {
+				_ = json.Unmarshal([]byte(oldProductsList), &products)
+				for _, p := range products {
+					budgetTotal += p.Preco * float64(p.Quantidade)
+				}
+			}
+
+			delivery, _ := doc["delivery"].(bson.M)
+			if delivery != nil {
+				if price, ok := delivery["price"].(float64); ok {
+					budgetTotal += price
+				}
+			}
+			if budgetTotal > 0 {
+				total += budgetTotal
+				count++
+			}
+		}
+		if err := cursor.Err(); err != nil {
+			return 0, err
+		}
+		if count == 0 {
+			return 0, nil
+		}
+		return total / float64(count), nil
 	}
 
 	pipeline := bson.A{
