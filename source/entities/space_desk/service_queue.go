@@ -192,6 +192,7 @@ func GetServiceQueueV2(w http.ResponseWriter, r *http.Request) {
 		SetLimit(int64(limit))
 
 	filter := buildServiceQueueV2FilterFromQueryParams(r)
+	filter["closed"] = false
 	cursor, err := chatCol.Find(ctx, filter, findOpts)
 	if err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_LEADS_IN_MONGODB)
