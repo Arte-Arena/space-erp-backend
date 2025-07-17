@@ -304,6 +304,7 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	respMap["from"] = "company"
 	respMap["to"] = reqBody.To
+	respMap["type"] = tipo
 	respMap["messages"] = []any{reqBody.Body}
 	broadcastSpaceDeskMessage(respMap)
 
