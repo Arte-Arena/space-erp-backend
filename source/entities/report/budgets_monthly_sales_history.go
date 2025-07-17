@@ -12,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-func GetBudgetsMonthlySalesHistory(from, until string) (map[string]float64, error) {
+func GetBudgetsMonthlySalesHistory(from, until string, notApproved bool) (map[string]float64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
 
@@ -26,7 +26,13 @@ func GetBudgetsMonthlySalesHistory(from, until string) (map[string]float64, erro
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_BUDGETS)
 
-	filter := bson.D{{Key: "approved", Value: true}}
+	filter := bson.D{}
+	if notApproved {
+		filter = bson.D{{Key: "approved", Value: false}}
+	} else {
+		filter = bson.D{{Key: "approved", Value: true}}
+	}
+
 	if from != "" || until != "" {
 		dateFilter := bson.D{}
 		if from != "" {

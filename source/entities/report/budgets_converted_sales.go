@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-func GetBudgetsConvertedSales(from, until string) (int64, error) {
+func GetBudgetsConvertedSales(from, until string, notApproved bool) (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
 
@@ -25,7 +25,13 @@ func GetBudgetsConvertedSales(from, until string) (int64, error) {
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_BUDGETS)
 
-	filter := bson.D{{Key: "approved", Value: true}}
+	filter := bson.D{}
+	if notApproved {
+		filter = bson.D{{Key: "approved", Value: false}}
+	} else {
+		filter = bson.D{{Key: "approved", Value: true}}
+	}
+
 	if from != "" || until != "" {
 		dateFilter := bson.D{}
 		if from != "" {
