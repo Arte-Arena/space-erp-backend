@@ -12,11 +12,12 @@ import (
 )
 
 type SellerRanking struct {
-	SellerID      bson.ObjectID `bson:"_id" json:"seller_id"`
-	SellerName    string        `json:"seller_name"`
-	SalesCount    int64         `json:"sales_count"`
-	TotalValue    float64       `json:"total_value"`
-	AverageTicket float64       `json:"average_ticket"`
+	SellerID           bson.ObjectID `bson:"_id" json:"seller_id"`
+	SellerName         string        `json:"seller_name"`
+	SalesCount         int64         `json:"sales_count"`
+	TotalValue         float64       `json:"total_value"`
+	AverageTicket      float64       `json:"average_ticket"`
+	TotalShippingValue float64       `json:"total_shipping_value"`
 }
 
 func GetSuperadminSellersRanking(client *mongo.Client, from, until string) ([]SellerRanking, error) {
@@ -108,6 +109,46 @@ func GetSuperadminSellersRanking(client *mongo.Client, from, until string) ([]Se
 		}
 	}
 
+	filterShipping := bson.D{}
+	if from != "" || until != "" {
+		dateFilter := bson.D{}
+		if from != "" {
+			if fromTime, err := time.Parse(time.RFC3339, from); err == nil {
+				dateFilter = append(dateFilter, bson.E{Key: "$gte", Value: fromTime})
+			}
+		}
+		if until != "" {
+			if untilTime, err := time.Parse(time.RFC3339, until); err == nil {
+				dateFilter = append(dateFilter, bson.E{Key: "$lte", Value: untilTime})
+			}
+		}
+		if len(dateFilter) > 0 {
+			filterShipping = append(filterShipping, bson.E{Key: "created_at", Value: dateFilter})
+		}
+	}
+	pipelineShipping := bson.A{
+		bson.D{{Key: "$match", Value: filterShipping}},
+		bson.D{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: "$seller"},
+			{Key: "total_shipping", Value: bson.D{{Key: "$sum", Value: "$delivery.price"}}},
+		}}},
+	}
+	cursor3, err := coll.Aggregate(ctx, pipelineShipping)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor3.Close(ctx)
+	totalShipping := map[bson.ObjectID]float64{}
+	for cursor3.Next(ctx) {
+		var doc struct {
+			SellerID      bson.ObjectID `bson:"_id"`
+			TotalShipping float64       `bson:"total_shipping"`
+		}
+		if err := cursor3.Decode(&doc); err == nil {
+			totalShipping[doc.SellerID] = doc.TotalShipping
+		}
+	}
+
 	userColl := client.Database(database.GetDB()).Collection(database.COLLECTION_USERS)
 	var sellerIDs []bson.ObjectID
 	for seller := range salesCount {
@@ -140,11 +181,12 @@ func GetSuperadminSellersRanking(client *mongo.Client, from, until string) ([]Se
 			avgTicket = totalVal / float64(sales)
 		}
 		rankings = append(rankings, SellerRanking{
-			SellerID:      seller,
-			SellerName:    nameMap[seller],
-			SalesCount:    sales,
-			TotalValue:    math.Round(totalValue[seller]*100) / 100,
-			AverageTicket: math.Round(avgTicket*100) / 100,
+			SellerID:           seller,
+			SellerName:         nameMap[seller],
+			SalesCount:         sales,
+			TotalValue:         math.Round(totalValue[seller]*100) / 100,
+			AverageTicket:      math.Round(avgTicket*100) / 100,
+			TotalShippingValue: math.Round(totalShipping[seller]*100) / 100,
 		})
 	}
 	return rankings, nil
