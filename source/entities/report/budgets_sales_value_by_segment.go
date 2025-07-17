@@ -3,6 +3,7 @@ package report
 import (
 	"api/database"
 	"context"
+	"encoding/json"
 	"os"
 	"time"
 
@@ -25,7 +26,7 @@ func GetBudgetsSalesValueBySegment(from, until string, notApproved bool) (map[st
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_BUDGETS)
 
-	filter := bson.D{}
+	var filter bson.D
 	if notApproved {
 		filter = bson.D{{Key: "approved", Value: false}}
 	} else {
@@ -47,6 +48,56 @@ func GetBudgetsSalesValueBySegment(from, until string, notApproved bool) (map[st
 		if len(dateFilter) > 0 {
 			filter = append(filter, bson.E{Key: "created_at", Value: dateFilter})
 		}
+	}
+
+	if notApproved {
+		cursor, err := collection.Find(ctx, filter)
+		if err != nil {
+			return nil, err
+		}
+		defer cursor.Close(ctx)
+
+		type Product struct {
+			Preco      float64 `json:"preco"`
+			Quantidade int     `json:"quantidade"`
+		}
+
+		result := make(map[string]float64)
+		for cursor.Next(ctx) {
+			var doc bson.M
+			if err := cursor.Decode(&doc); err != nil {
+				continue
+			}
+
+			segment := "Sem segmento"
+			if lead, ok := doc["lead"].(bson.M); ok {
+				if seg, ok := lead["segment"].(string); ok && seg != "" {
+					segment = seg
+				}
+			}
+
+			oldProductsList, _ := doc["old_products_list"].(string)
+			var products []Product
+			budgetTotal := 0.0
+			if oldProductsList != "" {
+				_ = json.Unmarshal([]byte(oldProductsList), &products)
+				for _, p := range products {
+					budgetTotal += p.Preco * float64(p.Quantidade)
+				}
+			}
+
+			delivery, _ := doc["delivery"].(bson.M)
+			if delivery != nil {
+				if price, ok := delivery["price"].(float64); ok {
+					budgetTotal += price
+				}
+			}
+			result[segment] += budgetTotal
+		}
+		if err := cursor.Err(); err != nil {
+			return nil, err
+		}
+		return result, nil
 	}
 
 	pipeline := bson.A{
