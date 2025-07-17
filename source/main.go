@@ -92,7 +92,6 @@ func main() {
 	mux.Handle("POST /v1/space-desk/order-details", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOrderDetails)))
 	mux.Handle("POST /v1/space-desk/order-template", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOrderDetails)))
 	mux.Handle("POST /v1/space-desk/pix-message", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreatePixMessage)))
-	mux.Handle("POST /v1/space-desk/simple-pix-message", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateSimplePixMessage)))
 
 	mux.Handle("GET /v1/space-desk/media-base64", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.HandlerMediaBase64)))
 	mux.Handle("GET /v1/space-desk/media-download", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.HandlerMediaDownload)))
