@@ -215,13 +215,14 @@ func CreatePixMessage(w http.ResponseWriter, r *http.Request) {
 	msgRaw := bson.M{
 		"body":              req.Interactive.Body.Text,
 		"chat_id":           objID,
+		"pix":               req.Interactive,
 		"by":                req.UserId,
 		"from":              "company",
 		"created_at":        now,
 		"message_id":        wamid,
 		"message_timestamp": timestamp,
 		"type":              "pix",
-		"status":            "", // pode preencher conforme workflow
+		"status":            "",
 		"updated_at":        now.Format(time.RFC3339),
 	}
 	msgCol := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_MESSAGE)
@@ -236,6 +237,7 @@ func CreatePixMessage(w http.ResponseWriter, r *http.Request) {
 			"last_message_id":        wamid,
 			"last_message_excerpt":   req.Interactive.Body.Text,
 			"last_message_sender":    "company",
+			"last_message_type":      "pix",
 			"last_message_timestamp": timestamp,
 			"updated_at":             now.Format(time.RFC3339),
 		},
@@ -249,6 +251,7 @@ func CreatePixMessage(w http.ResponseWriter, r *http.Request) {
 	respMap["from"] = "company"
 	respMap["to"] = req.To
 	respMap["type"] = "pix"
+	respMap["pix"] = req.Interactive
 	broadcastSpaceDeskMessage(respMap)
 
 	// 10) Retorna resposta ao cliente HTTP

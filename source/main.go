@@ -93,7 +93,6 @@ func main() {
 	mux.Handle("POST /v1/space-desk/order-details", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOrderDetails)))
 	mux.Handle("POST /v1/space-desk/order-template", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOrderDetails)))
 	mux.Handle("POST /v1/space-desk/pix-message", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreatePixMessage)))
-	mux.Handle("POST /v1/space-desk/simple-pix-message", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateSimplePixMessage)))
 
 	mux.Handle("GET /v1/space-desk/media-base64", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.HandlerMediaBase64)))
 	mux.Handle("GET /v1/space-desk/media-download", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.HandlerMediaDownload)))
@@ -107,8 +106,10 @@ func main() {
 	mux.Handle("DELETE /v1/space-desk/group-users", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeleteUserFromGroup)))
 	mux.Handle("GET /v1/space-desk/group-chats/{groupId}", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetChatsFromGroup)))
 
+	
 	mux.Handle("PATCH /v1/space-desk/chats/status", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateChatStatus)))
 	mux.Handle("PATCH /v1/space-desk/chats/user", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateChatUser)))
+	mux.Handle("PATCH /v1/space-desk/chat-description", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateChatDescription)))
 
 	mux.Handle("POST /v1/space-desk/group-chat", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.AddChatToGroup)))
 	mux.Handle("DELETE /v1/space-desk/group-chat", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeleteChatFromGroup)))
