@@ -68,16 +68,6 @@ func GetByQueryBudgetsV2(w http.ResponseWriter, r *http.Request) {
 		responseData["budgets_average_ticket"] = v
 	}
 
-	if _, ok := params["budgets_converted_sales"]; ok {
-		// TODO: Implementar função que retorna orçamentos aprovados convertidos em vendas
-		var v int64
-		// v, err = GetBudgetsConvertedSales(period[0], period[1])
-		// if handleErr(err) {
-		// 	return
-		// }
-		responseData["budgets_converted_sales"] = v
-	}
-
 	if _, ok := params["budgets_daily_sales_history"]; ok {
 		// TODO: Implementar função que retorna histórico diário de vendas de orçamentos aprovados (dados granulares)
 		var v map[string]float64
@@ -106,16 +96,6 @@ func GetByQueryBudgetsV2(w http.ResponseWriter, r *http.Request) {
 		// 	return
 		// }
 		responseData["budgets_sales_value_by_segment"] = v
-	}
-
-	if _, ok := params["budgets_conversion_rate"]; ok {
-		// TODO: Implementar função que retorna taxa de conversão de orçamentos aprovados
-		var v float64
-		// v, err = GetBudgetsConversionRate(period[0], period[1])
-		// if handleErr(err) {
-		// 	return
-		// }
-		responseData["budgets_conversion_rate"] = v
 	}
 
 	if _, ok := params["budgets_by_payment_method"]; ok {
