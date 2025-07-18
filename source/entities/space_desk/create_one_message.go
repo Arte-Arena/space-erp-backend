@@ -80,7 +80,7 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	colChats := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
 	var chatDoc struct {
 		ClientePhoneNumber string `bson:"cliente_phone_number"`
-		LastMessage        any    `bson:"last_message_timestamp"`
+		LastMessage        any    `bson:"last_message_from_client_timestamp"`
 	}
 
 	objID, err := bson.ObjectIDFromHex(reqBody.To)
@@ -104,6 +104,8 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	recipient := chatDoc.ClientePhoneNumber
 
 	isTemplate := reqBody.Type == "template"
+	isAnnotation := reqBody.Type == "annotation"
+
 	var lastMsgTime time.Time
 	if t, ok := chatDoc.LastMessage.(time.Time); ok {
 		lastMsgTime = t
@@ -112,203 +114,250 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	canSendTemplate := ShouldSendAsTemplate(lastMsgTime)
 
-	tipo := "Text"
+	tipo := "text"
 	var payload map[string]any
-	if isTemplate && !canSendTemplate {
-		params, _ := reqBody.Params.([]interface{})
-		var values []string
-		for _, p := range params {
-			paramMap, ok := p.(map[string]interface{})
-			if ok {
-				if txt, ok := paramMap["text"].(string); ok {
-					values = append(values, txt)
-				}
-			}
-		}
-		interpolatedBody := InterpolateTemplate(reqBody.Body, values)
+	if isAnnotation {
+		now := time.Now().UTC()
+		tipo = "annotation"
+		internalID := bson.NewObjectID().Hex()
 
-		payload = map[string]any{
-			"messaging_product": "whatsapp",
-			"recipient_type":    "individual",
-			"to":                recipient,
-			"type":              "text",
-			"text": map[string]string{
-				"body": interpolatedBody,
-			},
+		annotationMessage := bson.M{
+			"body":              reqBody.Body,
+			"chat_id":           objID,
+			"by":                reqBody.UserId,
+			"from":              "company",
+			"created_at":        time.Now().UTC(),
+			"message_id":        internalID,
+			"message_timestamp": fmt.Sprint(now.Unix()),
+			"type":              tipo,
+			"status":            "",
+			"updated_at":        time.Now().UTC().Format(time.RFC3339),
 		}
-	} else if isTemplate && canSendTemplate {
-		tipo = "Template"
-		payload = map[string]any{
-			"messaging_product": "whatsapp",
-			"to":                recipient,
-			"type":              "template",
-			"template": map[string]any{
-				"name":     reqBody.TemplateName,
-				"language": map[string]string{"code": "pt_BR"},
-				"components": []any{
-					map[string]any{
-						"type":       "body",
-						"parameters": reqBody.Params,
-					},
+		colMessages := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_MESSAGE)
+		_, err = colMessages.InsertOne(ctx, annotationMessage)
+		if err != nil {
+			log.Println("Erro ao inserir evento no MongoDB:", err)
+			utils.SendResponse(w, http.StatusInternalServerError, "Erro ao inserir evento no MongoDB: "+err.Error(), nil, utils.ERROR_TO_INSERT_IN_MONGODB)
+			return
+		}
+
+		respMap := map[string]any{
+			"contacts": []map[string]any{
+				{
+					"input": chatDoc.ClientePhoneNumber,
+					"wa_id": chatDoc.ClientePhoneNumber,
 				},
 			},
-		}
-	} else {
-		payload = map[string]any{
+			"from":              "company",
+			"messages":          []any{reqBody.Body},
 			"messaging_product": "whatsapp",
-			"recipient_type":    "individual",
-			"to":                recipient,
-			"type":              "text",
-			"text": map[string]string{
-				"body": reqBody.Body,
-			},
+			"to":                objID.Hex(),
+			"id":                internalID,
+			"type":              tipo,
 		}
-	}
 
-	bodyBytes, err := json.Marshal(payload)
-	if err != nil {
-		log.Println("Erro ao serializar payload:", err)
-		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao serializar payload: "+err.Error(), nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
-		return
-	}
+		broadcastSpaceDeskMessage(respMap)
 
-	apiKey := os.Getenv(utils.SPACE_DESK_API_KEY)
-	if apiKey == "" {
-		log.Println("API key não configurada (variável de ambiente não encontrada)")
-		utils.SendResponse(w, http.StatusInternalServerError, "API key não configurada", nil, utils.CANNOT_CONNECT_TO_MONGODB)
-		return
-	}
+		utils.SendResponse(w, http.StatusCreated, "", respMap, 0)
 
-	req360, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		"https://waba-v2.360dialog.io/messages",
-		bytes.NewReader(bodyBytes),
-	)
-	if err != nil {
-		log.Println("Erro ao criar requisição externa:", err)
-		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao criar requisição externa: "+err.Error(), nil, utils.ERROR_TO_CREATE_EXTERNAL_CONNECTION)
-		return
-	}
-	req360.Header.Set("Content-Type", "application/json")
-	req360.Header.Set("Accept", "application/json")
-	req360.Header.Set("D360-API-KEY", apiKey)
+	} else {
+		if isTemplate && !canSendTemplate && !isAnnotation {
+			params, _ := reqBody.Params.([]interface{})
+			var values []string
+			for _, p := range params {
+				paramMap, ok := p.(map[string]interface{})
+				if ok {
+					if txt, ok := paramMap["text"].(string); ok {
+						values = append(values, txt)
+					}
+				}
+			}
+			interpolatedBody := InterpolateTemplate(reqBody.Body, values)
 
-	client := &http.Client{}
-	resp, err := client.Do(req360)
-	if err != nil {
-		log.Println("Falha ao enviar mensagem:", err)
-		utils.SendResponse(w, http.StatusBadGateway, "Falha ao enviar mensagem", nil, utils.ERROR_TO_SEND_MESSAGE)
-		return
-	}
-	defer resp.Body.Close()
+			payload = map[string]any{
+				"messaging_product": "whatsapp",
+				"recipient_type":    "individual",
+				"to":                recipient,
+				"type":              "text",
+				"text": map[string]string{
+					"body": interpolatedBody,
+				},
+			}
+		} else if isTemplate && canSendTemplate && !isAnnotation {
+			tipo = "Template"
+			payload = map[string]any{
+				"messaging_product": "whatsapp",
+				"to":                recipient,
+				"type":              "template",
+				"template": map[string]any{
+					"name":     reqBody.TemplateName,
+					"language": map[string]string{"code": "pt_BR"},
+					"components": []any{
+						map[string]any{
+							"type":       "body",
+							"parameters": reqBody.Params,
+						},
+					},
+				},
+			}
+		} else if !isAnnotation {
+			payload = map[string]any{
+				"messaging_product": "whatsapp",
+				"recipient_type":    "individual",
+				"to":                recipient,
+				"type":              "text",
+				"text": map[string]string{
+					"body": reqBody.Body,
+				},
+			}
+		}
 
-	respMap := make(map[string]any)
-	if err := json.NewDecoder(resp.Body).Decode(&respMap); err != nil {
-		log.Println("Erro ao ler resposta externa:", err)
-		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao ler resposta externa", nil, utils.ERROR_TO_READ_MESSAGE)
-		return
-	}
+		bodyBytes, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("Erro ao serializar payload:", err)
+			utils.SendResponse(w, http.StatusInternalServerError, "Erro ao serializar payload: "+err.Error(), nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
+			return
+		}
 
-	wamid := extractWamid(respMap)
+		apiKey := os.Getenv(utils.SPACE_DESK_API_KEY)
+		if apiKey == "" {
+			log.Println("API key não configurada (variável de ambiente não encontrada)")
+			utils.SendResponse(w, http.StatusInternalServerError, "API key não configurada", nil, utils.CANNOT_CONNECT_TO_MONGODB)
+			return
+		}
 
-	if wamid == "not_returned" {
-		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao enviar mensagem: id não gerado. Verifique se a API D360 está funcionando corretamente.", nil, utils.ERROR_TO_SEND_MESSAGE)
-		return
-	}
+		req360, err := http.NewRequestWithContext(ctx, http.MethodPost,
+			"https://waba-v2.360dialog.io/messages",
+			bytes.NewReader(bodyBytes),
+		)
+		if err != nil {
+			log.Println("Erro ao criar requisição externa:", err)
+			utils.SendResponse(w, http.StatusInternalServerError, "Erro ao criar requisição externa: "+err.Error(), nil, utils.ERROR_TO_CREATE_EXTERNAL_CONNECTION)
+			return
+		}
+		req360.Header.Set("Content-Type", "application/json")
+		req360.Header.Set("Accept", "application/json")
+		req360.Header.Set("D360-API-KEY", apiKey)
 
-	now := time.Now().UTC()
-	raw := bson.M{
-		"entry": []any{
-			bson.M{
-				"changes": []any{
-					bson.M{
-						"field": "messages",
-						"value": bson.M{
-							"messages": []any{
-								bson.M{
-									"from":      "space-erp-backend",
-									"to":        reqBody.To,
-									"id":        wamid,
-									"timestamp": fmt.Sprint(now.Unix()),
-									"text":      bson.M{"body": reqBody.Body},
-									"user":      reqBody.UserId,
+		client := &http.Client{}
+		resp, err := client.Do(req360)
+		if err != nil {
+			log.Println("Falha ao enviar mensagem:", err)
+			utils.SendResponse(w, http.StatusBadGateway, "Falha ao enviar mensagem", nil, utils.ERROR_TO_SEND_MESSAGE)
+			return
+		}
+		defer resp.Body.Close()
+
+		respMap := make(map[string]any)
+		if err := json.NewDecoder(resp.Body).Decode(&respMap); err != nil {
+			log.Println("Erro ao ler resposta externa:", err)
+			utils.SendResponse(w, http.StatusInternalServerError, "Erro ao ler resposta externa", nil, utils.ERROR_TO_READ_MESSAGE)
+			return
+		}
+
+		wamid := extractWamid(respMap)
+
+		if wamid == "not_returned" {
+			utils.SendResponse(w, http.StatusInternalServerError, "Erro ao enviar mensagem: id não gerado. Verifique se a API D360 está funcionando corretamente.", nil, utils.ERROR_TO_SEND_MESSAGE)
+			return
+		}
+
+		now := time.Now().UTC()
+		raw := bson.M{
+			"entry": []any{
+				bson.M{
+					"changes": []any{
+						bson.M{
+							"field": "messages",
+							"value": bson.M{
+								"messages": []any{
+									bson.M{
+										"from":      "space-erp-backend",
+										"to":        reqBody.To,
+										"id":        wamid,
+										"timestamp": fmt.Sprint(now.Unix()),
+										"text":      bson.M{"body": reqBody.Body},
+										"user":      reqBody.UserId,
+									},
 								},
 							},
 						},
 					},
 				},
 			},
-		},
-	}
-
-	col := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_EVENTS_WHATSAPP)
-	_, err = col.InsertOne(ctx, raw)
-	if err != nil {
-		log.Println("Erro ao inserir evento no MongoDB:", err)
-		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao inserir evento no MongoDB: "+err.Error(), nil, utils.ERROR_TO_INSERT_IN_MONGODB)
-		return
-	}
-
-	newRaw := bson.M{
-		"body":              reqBody.Body,
-		"chat_id":           objID,
-		"by":                reqBody.UserId,
-		"from":              "company",
-		"created_at":        time.Now().UTC(),
-		"message_id":        wamid,
-		"message_timestamp": fmt.Sprint(now.Unix()),
-		"type":              tipo,
-		"status":            "",
-		"updated_at":        time.Now().UTC().Format(time.RFC3339),
-	}
-	colMessages := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_MESSAGE)
-	_, err = colMessages.InsertOne(ctx, newRaw)
-	if err != nil {
-		log.Println("Erro ao inserir evento no MongoDB:", err)
-		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao inserir evento no MongoDB: "+err.Error(), nil, utils.ERROR_TO_INSERT_IN_MONGODB)
-		return
-	}
-
-	filter := bson.M{"_id": objID}
-
-	var update bson.M
-
-	if isTemplate && canSendTemplate {
-		update = bson.M{
-			"$set": bson.M{
-				"last_message_id":                      wamid,
-				"last_message_excerpt":                 reqBody.Body,
-				"last_message_sender":                  "company",
-				"last_message_timestamp":               fmt.Sprint(now.Unix()),
-				"last_template_from_company_timestamp": fmt.Sprint(now.Unix()),
-				"updated_at":                           time.Now().UTC().Format(time.RFC3339),
-			},
 		}
-	} else {
-		update = bson.M{
-			"$set": bson.M{
-				"last_message_id":        wamid,
-				"last_message_timestamp": fmt.Sprint(now.Unix()),
-				"last_message_excerpt":   reqBody.Body,
-				"last_message_sender":    "company",
-				"updated_at":             time.Now().UTC().Format(time.RFC3339),
-			},
-		}
-	}
-	colChat := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
-	updateOpts := options.UpdateOne().SetUpsert(false) //true caso puder criar
-	_, err = colChat.UpdateOne(ctx, filter, update, updateOpts)
-	if err != nil {
-		log.Println("Erro ao inserir evento no MongoDB:", err)
-		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao inserir evento no MongoDB: "+err.Error(), nil, utils.ERROR_TO_INSERT_IN_MONGODB)
-		return
-	}
-	respMap["from"] = "company"
-	respMap["to"] = reqBody.To
-	respMap["type"] = tipo
-	respMap["messages"] = []any{reqBody.Body}
-	broadcastSpaceDeskMessage(respMap)
 
-	utils.SendResponse(w, http.StatusCreated, "", respMap, 0)
+		col := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_EVENTS_WHATSAPP)
+		_, err = col.InsertOne(ctx, raw)
+		if err != nil {
+			log.Println("Erro ao inserir evento no MongoDB:", err)
+			utils.SendResponse(w, http.StatusInternalServerError, "Erro ao inserir evento no MongoDB: "+err.Error(), nil, utils.ERROR_TO_INSERT_IN_MONGODB)
+			return
+		}
+
+		newRaw := bson.M{
+			"body":              reqBody.Body,
+			"chat_id":           objID,
+			"by":                reqBody.UserId,
+			"from":              "company",
+			"created_at":        time.Now().UTC(),
+			"message_id":        wamid,
+			"message_timestamp": fmt.Sprint(now.Unix()),
+			"type":              tipo,
+			"status":            "",
+			"updated_at":        time.Now().UTC().Format(time.RFC3339),
+		}
+		colMessages := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_MESSAGE)
+		_, err = colMessages.InsertOne(ctx, newRaw)
+		if err != nil {
+			log.Println("Erro ao inserir evento no MongoDB:", err)
+			utils.SendResponse(w, http.StatusInternalServerError, "Erro ao inserir evento no MongoDB: "+err.Error(), nil, utils.ERROR_TO_INSERT_IN_MONGODB)
+			return
+		}
+
+		filter := bson.M{"_id": objID}
+
+		var update bson.M
+
+		if isTemplate && canSendTemplate {
+			update = bson.M{
+				"$set": bson.M{
+					"last_message_id":                      wamid,
+					"last_message_excerpt":                 reqBody.Body,
+					"last_message_sender":                  "company",
+					"last_message_timestamp":               fmt.Sprint(now.Unix()),
+					"last_template_from_company_timestamp": fmt.Sprint(now.Unix()),
+					"updated_at":                           time.Now().UTC().Format(time.RFC3339),
+				},
+			}
+		} else {
+			update = bson.M{
+				"$set": bson.M{
+					"last_message_id":        wamid,
+					"last_message_timestamp": fmt.Sprint(now.Unix()),
+					"last_message_excerpt":   reqBody.Body,
+					"last_message_sender":    "company",
+					"updated_at":             time.Now().UTC().Format(time.RFC3339),
+				},
+			}
+		}
+		colChat := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
+		updateOpts := options.UpdateOne().SetUpsert(false) //true caso puder criar
+		_, err = colChat.UpdateOne(ctx, filter, update, updateOpts)
+		if err != nil {
+			log.Println("Erro ao inserir evento no MongoDB:", err)
+			utils.SendResponse(w, http.StatusInternalServerError, "Erro ao inserir evento no MongoDB: "+err.Error(), nil, utils.ERROR_TO_INSERT_IN_MONGODB)
+			return
+		}
+		respMap["from"] = "company"
+		respMap["to"] = reqBody.To
+		respMap["type"] = tipo
+		respMap["messages"] = []any{reqBody.Body}
+		broadcastSpaceDeskMessage(respMap)
+
+		utils.SendResponse(w, http.StatusCreated, "", respMap, 0)
+	}
+
 }
 
 func extractWamid(respMap map[string]interface{}) string {
