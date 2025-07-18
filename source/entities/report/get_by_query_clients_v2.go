@@ -79,27 +79,5 @@ func GetByQueryV2(w http.ResponseWriter, r *http.Request) {
 		responseData["clients_by_state_per_day"] = "TODO: Implementar"
 	}
 
-	if _, ok := params["clients_average_budget_value_per_day"]; ok {
-		// TODO: Implementar função para valor médio de orçamentos por dia
-		// var v map[string]float64
-		// v, err = GetClientsAverageBudgetValuePerDay(period[0], period[1])
-		// if handleErr(err) {
-		// 	return
-		// }
-		// responseData["clients_average_budget_value_per_day"] = v
-		responseData["clients_average_budget_value_per_day"] = "TODO: Implementar"
-	}
-
-	if _, ok := params["clients_active_per_day"]; ok {
-		// TODO: Implementar função para clientes ativos por dia
-		// var v map[string]int64
-		// v, err = GetClientsActivePerDay(period[0], period[1])
-		// if handleErr(err) {
-		// 	return
-		// }
-		// responseData["clients_active_per_day"] = v
-		responseData["clients_active_per_day"] = "TODO: Implementar"
-	}
-
 	utils.SendResponse(w, http.StatusOK, "", responseData, 0)
 }
