@@ -68,6 +68,8 @@ func main() {
 	mux.Handle("GET /v1/orders/{id}", middlewares.LaravelAuth(http.HandlerFunc(orders.GetOne)))
 
 	mux.Handle("GET /v1/reports", middlewares.LaravelAuth(http.HandlerFunc(report.GetByQuery)))
+	mux.Handle("GET /v2/reports/clients", middlewares.LaravelAuth(http.HandlerFunc(report.GetByQueryV2)))
+	mux.Handle("GET /v2/reports/budgets", middlewares.LaravelAuth(http.HandlerFunc(report.GetByQueryBudgetsV2)))
 	mux.Handle("GET /v1/reports/commercial/goals", middlewares.LaravelAuth(http.HandlerFunc(report.GetAllCommercialGoals)))
 	mux.Handle("POST /v1/reports/commercial/goals", middlewares.LaravelAuth(http.HandlerFunc(report.CreateCommercialGoal)))
 	mux.Handle("GET /v1/reports/commercial/goals/{id}", middlewares.LaravelAuth(http.HandlerFunc(report.GetOneCommercialGoal)))
@@ -105,7 +107,7 @@ func main() {
 	mux.Handle("DELETE /v1/space-desk/group", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeleteGroup)))
 	mux.Handle("DELETE /v1/space-desk/group-users", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeleteUserFromGroup)))
 	mux.Handle("GET /v1/space-desk/group-chats/{groupId}", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetChatsFromGroup)))
-	
+
 	mux.Handle("PATCH /v1/space-desk/chats/status", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateChatStatus)))
 	mux.Handle("PATCH /v1/space-desk/chats/user", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateChatUser)))
 	mux.Handle("PATCH /v1/space-desk/chat-description", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateChatDescription)))
