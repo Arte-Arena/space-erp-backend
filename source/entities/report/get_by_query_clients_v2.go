@@ -47,36 +47,30 @@ func GetByQueryV2(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, ok := params["clients_new_per_day"]; ok {
-		// TODO: Implementar função que retorna dados diários em vez de mensais
-		// var v map[string]int64
-		// v, err = GetClientsNewPerDay(period[0], period[1])
-		// if handleErr(err) {
-		// 	return
-		// }
-		// responseData["clients_new_per_day"] = v
-		responseData["clients_new_per_day"] = "TODO: Implementar"
+		var v map[string]int64
+		v, err = GetClientsNewPerDayV2(period[0], period[1])
+		if handleErr(err) {
+			return
+		}
+		responseData["clients_new_per_day"] = v
 	}
 
 	if _, ok := params["clients_by_person_type_per_day"]; ok {
-		// TODO: Implementar função para distribuição por tipo de pessoa por dia
-		// var v map[string]map[string]int64
-		// v, err = GetClientsByPersonTypePerDay(period[0], period[1])
-		// if handleErr(err) {
-		// 	return
-		// }
-		// responseData["clients_by_person_type_per_day"] = v
-		responseData["clients_by_person_type_per_day"] = "TODO: Implementar"
+		var v map[string]map[string]int64
+		v, err = GetClientsByPersonTypePerDayV2(period[0], period[1])
+		if handleErr(err) {
+			return
+		}
+		responseData["clients_by_person_type_per_day"] = v
 	}
 
 	if _, ok := params["clients_by_state_per_day"]; ok {
-		// TODO: Implementar função para distribuição por estado por dia
-		// var v map[string]map[string]int64
-		// v, err = GetClientsByStatePerDay(period[0], period[1])
-		// if handleErr(err) {
-		// 	return
-		// }
-		// responseData["clients_by_state_per_day"] = v
-		responseData["clients_by_state_per_day"] = "TODO: Implementar"
+		var v map[string]map[string]int64
+		v, err = GetClientsByStatePerDayV2(period[0], period[1])
+		if handleErr(err) {
+			return
+		}
+		responseData["clients_by_state_per_day"] = v
 	}
 
 	utils.SendResponse(w, http.StatusOK, "", responseData, 0)
