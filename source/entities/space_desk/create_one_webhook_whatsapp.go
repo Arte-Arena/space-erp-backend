@@ -45,11 +45,6 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
 	}
 
-	_, err = collectionEvents.InsertOne(ctx, event)
-	if err != nil {
-		log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
-	}
-
 	collection_chat := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
 
 	entryArr, ok := event["entry"].([]interface{})
@@ -227,9 +222,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 		}
 
 		now := time.Now().UTC()
-
 		var lastMessageFromClient string
-
 		msgType, _ := messages["type"].(string)
 
 		if msgType, ok := messages["type"].(string); ok && msgType == "text" {
@@ -240,6 +233,35 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		// colocar nos chats o id do lead (caso não encotre ele cria um novo lead) e salva o id do lead no chat
+		collectionLeads := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_LEADS)
+		leadFilter := bson.M{"phone": clientPhoneNumber}
+
+		var leadDoc struct {
+			ID bson.ObjectID `bson:"_id"`
+		}
+		err := collectionLeads.FindOne(ctx, leadFilter).Decode(&leadDoc)
+		isNewLead := false
+
+		if err != nil {
+			// Criar novo lead se não existir
+			newLead := schemas.Lead{
+				Phone:     clientPhoneNumber,
+				Name:      name,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+				Source:    "SpaceDesk",
+			}
+			insertResult, err := collectionLeads.InsertOne(ctx, newLead)
+			if err != nil {
+				log.Printf("Erro ao criar lead: %v", err)
+			} else {
+				leadDoc.ID = insertResult.InsertedID.(bson.ObjectID)
+				isNewLead = true
+			}
+		}
+
+		// 2. Atualizar chat COM leadID
 		filter := bson.M{"cliente_phone_number": clientPhoneNumber, "company_phone_number": companyPhoneNumber}
 		update := bson.M{
 			"$set": bson.M{
@@ -251,6 +273,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 				"last_message_sender":                "client",
 				"last_message_from_client_timestamp": fmt.Sprint(now.Unix()),
 				"updated_at":                         updatedAt,
+				"lead_id":                            leadDoc.ID, // Usar ID real
 			},
 			"$setOnInsert": bson.M{
 				"company_phone_number": companyPhoneNumber,
@@ -261,17 +284,41 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 				"created_at":           updatedAt,
 			},
 		}
+
 		updateOpts := options.UpdateOne().SetUpsert(true)
 		updateResult, err := collection_chat.UpdateOne(ctx, filter, update, updateOpts)
-
 		if err != nil {
-			log.Printf("[CreateOneWebhookWhatsapp] Error inserting event into MongoDB: %v", err)
+			log.Printf("Erro ao atualizar chat: %v", err)
+		}
+
+		// 3. Atualizar lead com platformId se for novo
+		if isNewLead {
+			var chatID bson.ObjectID
+			if updateResult.UpsertedID != nil {
+				chatID = updateResult.UpsertedID.(bson.ObjectID)
+			} else {
+				var chatDoc struct {
+					ID bson.ObjectID `bson:"_id"`
+				}
+				if err := collection_chat.FindOne(ctx, filter).Decode(&chatDoc); err == nil {
+					chatID = chatDoc.ID
+				}
+			}
+
+			if !chatID.IsZero() {
+				_, err := collectionLeads.UpdateByID(
+					ctx,
+					leadDoc.ID,
+					bson.M{"$set": bson.M{"platform_id": chatID.Hex()}},
+				)
+				if err != nil {
+					log.Printf("Erro ao atualizar lead: %v", err)
+				}
+			}
 		}
 
 		// Criar ou Atualizar a collection de message
-
 		collection_message := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_MESSAGE)
-
 		var chatId interface{}
 
 		if updateResult.UpsertedID != nil {
