@@ -5,6 +5,7 @@ import (
 	"api/utils"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 type UpdateChatDescriptionBody struct {
 	ID          string `json:"id"`
 	Description string `json:"description" bson:"description"`
+	UserId      string `json:"user_id" bson:"user_id"`
 }
 
 func UpdateChatDescription(w http.ResponseWriter, r *http.Request) {
@@ -56,35 +58,65 @@ func UpdateChatDescription(w http.ResponseWriter, r *http.Request) {
 	}
 	defer mongoClient.Disconnect(ctx)
 
-	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
-
-	objectID, _ := bson.ObjectIDFromHex(body.ID)
-	filter := bson.M{"_id": objectID}
-
-	updateFields := bson.M{
-		"updated_at": time.Now().UTC(),
+	colChats := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
+	var chatDoc struct {
+		ClientePhoneNumber string `bson:"cliente_phone_number"`
+		LastMessage        any    `bson:"last_message_timestamp"`
 	}
-	if _, ok := raw["description"]; ok {
-		updateFields["description"] = body.Description
-	}
-	if len(updateFields) == 1 {
-		utils.SendResponse(w, http.StatusBadRequest, "Nenhum campo para atualizar foi fornecido", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
-		return
-	}
-	update := bson.M{"$set": updateFields}
 
-	res, err := collection.UpdateOne(ctx, filter, update)
+	objID, err := bson.ObjectIDFromHex(body.ID)
 	if err != nil {
-		log.Println("Erro ao atualizar status do chat:", err)
-		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao atualizar status do chat", nil, utils.ERROR_TO_UPDATE_IN_MONGODB)
+		log.Println("Erro ao converter ID do chat para ObjectID:", err, "ID recebido:", body.ID)
+		utils.SendResponse(w, http.StatusBadRequest, "ID do chat inválido", nil, utils.INVALID_CHAT_ID_FORMAT)
+		return
+	}
+	err = colChats.FindOne(r.Context(), bson.M{"_id": objID}).Decode(&chatDoc)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			utils.SendResponse(w, http.StatusNotFound, "Chat não encontrado", nil, utils.CANNOT_FIND_SPACE_DESK_GROUP_ID_FORMAT)
+			return
+		}
+		log.Println("Erro ao buscar chat:", err)
+		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao buscar chat: "+err.Error(), nil, utils.CANNOT_FIND_SPACE_DESK_GROUP_ID_FORMAT)
 		return
 	}
 
-	if res.MatchedCount == 0 {
-		log.Printf("Chat não encontrado para filtro: %+v\n", filter)
-		utils.SendResponse(w, http.StatusNotFound, "Chat não encontrado", nil, utils.ERROR_TO_UPDATE_IN_MONGODB)
+	now := time.Now().UTC()
+	internalID := bson.NewObjectID().Hex()
+	colMessages := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_MESSAGE)
+
+	message := bson.M{
+		"body":              body.Description,
+		"chat_id":           objID,
+		"by":                body.UserId,
+		"from":              "company",
+		"created_at":        now.Format(time.RFC3339),
+		"message_id":        internalID,
+		"message_timestamp": fmt.Sprint(now.Unix()),
+		"type":              "annotation",
+		"status":            "",
+		"updated_at":        now.Format(time.RFC3339),
+	}
+
+	_, err = colMessages.InsertOne(ctx, message)
+	if err != nil {
+		log.Println("Erro ao inserir anotação interna no MongoDB:", err)
+		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao salvar anotação interna", nil, utils.ERROR_TO_INSERT_IN_MONGODB)
 		return
 	}
 
-	utils.SendResponse(w, http.StatusOK, "Status do chat atualizado com sucesso", nil, 0)
+	// Atualiza o campo de descrição no chat (opcional)
+	_, err = colChats.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{
+		"$set": bson.M{
+			"description": body.Description,
+			"updated_at":  now.Format(time.RFC3339),
+		},
+	})
+	if err != nil {
+		log.Println("Erro ao atualizar descrição do chat:", err)
+		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao atualizar descrição do chat", nil, utils.ERROR_TO_UPDATE_IN_MONGODB)
+		return
+	}
+
+	utils.SendResponse(w, http.StatusOK, "Anotação interna registrada com sucesso", nil, 0)
 }
