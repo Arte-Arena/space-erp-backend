@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -31,8 +32,25 @@ func GetAllReadyMessages(w http.ResponseWriter, r *http.Request) {
 	}
 	defer dbClient.Disconnect(ctx)
 
+	// Paginação e filtros
+	query := r.URL.Query()
+	page := 1
+	limit := 80
+	if p := query.Get("page"); p != "" {
+		if n, err := strconv.Atoi(p); err == nil && n > 0 {
+			page = n
+		}
+	}
+	skip := (page - 1) * limit
+
+	filter := bson.M{}
+	if title := query.Get("titulo"); title != "" {
+		filter["titulo"] = bson.M{"$regex": title, "$options": "i"}
+	}
+
 	col := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_READY_MESSAGE)
-	cursor, err := col.Find(ctx, bson.M{})
+	findOpts := options.Find().SetLimit(int64(limit)).SetSkip(int64(skip))
+	cursor, err := col.Find(ctx, filter, findOpts)
 	if err != nil {
 		log.Println("Erro ao buscar mensagens prontas:", err)
 		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao buscar mensagens prontas", nil, utils.ERROR_TO_FIND_IN_MONGODB)
@@ -47,5 +65,15 @@ func GetAllReadyMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SendResponse(w, http.StatusOK, "Mensagens prontas recuperadas com sucesso", readyMsgs, 0)
+	// Retornar também o total de documentos para paginação
+	total, _ := col.CountDocuments(ctx, filter)
+
+	resp := bson.M{
+		"data":  readyMsgs,
+		"page":  page,
+		"limit": limit,
+		"total": total,
+	}
+
+	utils.SendResponse(w, http.StatusOK, "Mensagens prontas recuperadas com sucesso", resp, 0)
 }
