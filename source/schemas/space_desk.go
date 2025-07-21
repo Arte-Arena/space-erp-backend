@@ -178,6 +178,7 @@ type SpaceDeskChatMetadata struct {
 
 type SpaceDeskChat struct {
 	ID                                    bson.ObjectID `bson:"_id,omitempty" json:"id"`
+	LeadID                                bson.ObjectID `bson:"lead_id" json:"lead_id"`
 	CompanyPhoneNumber                    string        `bson:"company_phone_number" json:"company_phone_number"`
 	ClientPhoneNumber                     string        `bson:"cliente_phone_number" json:"cliente_phone_number"`
 	CreatedAt                             time.Time     `bson:"created_at" json:"created_at"`
