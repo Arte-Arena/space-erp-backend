@@ -53,6 +53,7 @@ func CreateLocationRequestMessage(w http.ResponseWriter, r *http.Request) {
 	// Busca telefone do destinatário no chat metadata
 	var chatDoc struct {
 		ClientePhoneNumber string `bson:"cliente_phone_number"`
+		CompanyPhoneNumber string `bson:"company_phone_number"`
 	}
 	col := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
 	objID, err := bson.ObjectIDFromHex(req.To)
@@ -92,9 +93,18 @@ func CreateLocationRequestMessage(w http.ResponseWriter, r *http.Request) {
 		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao criar requisição externa: "+err.Error(), nil, utils.ERROR_TO_CREATE_EXTERNAL_CONNECTION)
 		return
 	}
+
+	var apiKey string
+	switch chatDoc.CompanyPhoneNumber {
+	case "5511958339942":
+		apiKey = os.Getenv(utils.SPACE_DESK_API_KEY)
+	case "551123371548":
+		apiKey = os.Getenv(utils.SPACE_DESK_API_KEY_2)
+	}
+
 	req360.Header.Set("Content-Type", "application/json")
 	req360.Header.Set("Accept", "application/json")
-	req360.Header.Set("D360-API-KEY", os.Getenv(utils.SPACE_DESK_API_KEY))
+	req360.Header.Set("D360-API-KEY", apiKey)
 
 	resp, err := (&http.Client{}).Do(req360)
 	if err != nil {

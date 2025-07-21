@@ -81,6 +81,7 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 	var chatDoc struct {
 		ClientePhoneNumber string `bson:"cliente_phone_number"`
 		LastMessage        any    `bson:"last_message_from_client_timestamp"`
+		CompanyPhoneNumber string `bson:"company_phone_number"`
 	}
 
 	objID, err := bson.ObjectIDFromHex(reqBody.To)
@@ -219,7 +220,14 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		apiKey := os.Getenv(utils.SPACE_DESK_API_KEY)
+		var apiKey string
+		switch chatDoc.CompanyPhoneNumber {
+		case "5511958339942":
+			apiKey = os.Getenv(utils.SPACE_DESK_API_KEY)
+		case "551123371548":
+			apiKey = os.Getenv(utils.SPACE_DESK_API_KEY_2)
+		}
+
 		if apiKey == "" {
 			log.Println("API key não configurada (variável de ambiente não encontrada)")
 			utils.SendResponse(w, http.StatusInternalServerError, "API key não configurada", nil, utils.CANNOT_CONNECT_TO_MONGODB)
