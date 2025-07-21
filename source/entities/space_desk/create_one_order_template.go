@@ -66,9 +66,9 @@ func CreateOrderDetailsTemplate(r *http.Request, w http.ResponseWriter) {
 	var apiKey string
 	switch chatDoc.CompanyPhoneNumber {
 	case "5511958339942":
-		apiKey = os.Getenv(utils.SPACE_DESK_API_KEY)
-	case "551123371548":
 		apiKey = os.Getenv(utils.SPACE_DESK_API_KEY_2)
+	case "551123371548":
+		apiKey = os.Getenv(utils.SPACE_DESK_API_KEY)
 	}
 
 	payload := map[string]interface{}{
