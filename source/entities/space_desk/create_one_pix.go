@@ -81,8 +81,6 @@ type CreatePixMessageRequest struct {
 	Interactive InteractiveOrderDetails `json:"interactive"`
 }
 
-// --- Handler para criar e enviar a mensagem PIX ---
-
 func CreatePixMessage(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
@@ -118,6 +116,7 @@ func CreatePixMessage(w http.ResponseWriter, r *http.Request) {
 
 	var chatDoc struct {
 		ClientePhoneNumber string `bson:"cliente_phone_number"`
+		CompanyPhoneNumber string `bson:"company_phone_number"`
 	}
 	chatCol := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
 	if err := chatCol.FindOne(ctx, bson.M{"_id": objID}).Decode(&chatDoc); err != nil {
@@ -136,11 +135,19 @@ func CreatePixMessage(w http.ResponseWriter, r *http.Request) {
 	bodyBytes, _ := json.Marshal(payload)
 
 	// 4) Envia mensagem
-	apiKey := os.Getenv(utils.SPACE_DESK_API_KEY)
 	req360, _ := http.NewRequestWithContext(ctx, http.MethodPost,
 		"https://waba-v2.360dialog.io/messages",
 		bytes.NewReader(bodyBytes),
 	)
+
+	var apiKey string
+	switch chatDoc.CompanyPhoneNumber {
+	case "5511958339942":
+		apiKey = os.Getenv(utils.SPACE_DESK_API_KEY)
+	case "551123371548":
+		apiKey = os.Getenv(utils.SPACE_DESK_API_KEY_2)
+	}
+
 	req360.Header.Set("Content-Type", "application/json")
 	req360.Header.Set("Accept", "application/json")
 	req360.Header.Set("D360-API-KEY", apiKey)

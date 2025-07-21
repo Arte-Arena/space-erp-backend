@@ -67,6 +67,7 @@ func CreateOrderDetails(w http.ResponseWriter, r *http.Request) {
 	colChats := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
 	var chat struct {
 		ClientePhoneNumber string `bson:"cliente_phone_number"`
+		CompanyPhoneNumber string `bson:"company_phone_number"`
 	}
 	objID, _ := bson.ObjectIDFromHex(req.ChatID)
 	if err := colChats.FindOne(ctx, bson.M{"_id": objID}).Decode(&chat); err != nil {
@@ -77,35 +78,42 @@ func CreateOrderDetails(w http.ResponseWriter, r *http.Request) {
 
 	// Montar payload conforme Interactive Order Details (PIX)
 	payload := map[string]any{
-    "name":           "order_details_pix_2",
-    "language":       "pt_BR",
-    "category":       "UTILITY",
-    "display_format": "ORDER_DETAILS",
-    "components": []any{
-      map[string]any{
-        "type":   "HEADER",
-        "format": "TEXT",
-        "text":   "Teste pagamento pix",
-      },
-      map[string]any{
-        "type": "BODY",
-        "text": "Obrigado pela sua compra. Segue abaixo o codigo",
-      },
-      map[string]any{
-        "type": "BUTTONS",
-        "buttons": []any{
-          map[string]any{
-            "type": "ORDER_DETAILS",
-            "text": "Copy Pix code",
-          },
-        },
-      },
-    },
-  } // :contentReference[oaicite:3]{index=3}
+		"name":           "order_details_pix_2",
+		"language":       "pt_BR",
+		"category":       "UTILITY",
+		"display_format": "ORDER_DETAILS",
+		"components": []any{
+			map[string]any{
+				"type":   "HEADER",
+				"format": "TEXT",
+				"text":   "Teste pagamento pix",
+			},
+			map[string]any{
+				"type": "BODY",
+				"text": "Obrigado pela sua compra. Segue abaixo o codigo",
+			},
+			map[string]any{
+				"type": "BUTTONS",
+				"buttons": []any{
+					map[string]any{
+						"type": "ORDER_DETAILS",
+						"text": "Copy Pix code",
+					},
+				},
+			},
+		},
+	} // :contentReference[oaicite:3]{index=3}
 
 	// Enviar requisição à 360dialog
+	var apiKey string
+	switch chat.CompanyPhoneNumber {
+	case "5511958339942":
+		apiKey = os.Getenv(utils.SPACE_DESK_API_KEY)
+	case "551123371548":
+		apiKey = os.Getenv(utils.SPACE_DESK_API_KEY_2)
+	}
+
 	bodyBytes, _ := json.Marshal(payload)
-	apiKey := os.Getenv(utils.SPACE_DESK_API_KEY)
 	req360, _ := http.NewRequestWithContext(ctx, "POST", "https://waba-v2.360dialog.io/messages", bytes.NewReader(bodyBytes))
 	req360.Header.Set("Content-Type", "application/json")
 	req360.Header.Set("D360-API-KEY", apiKey)

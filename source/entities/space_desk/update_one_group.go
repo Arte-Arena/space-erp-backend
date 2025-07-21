@@ -19,11 +19,11 @@ func UpdateOneGroup(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	var payload struct {
-		ID     string   `json:"id"`
-		Name   string   `json:"name"`
-		Chats  []string `json:"chats"`
-		Status string   `json:"status"`
-		Type   string   `json:"type"`
+		ID      string   `json:"id"`
+		Name    string   `json:"name"`
+		UserIds []string `json:"user_ids"`
+		Status  string   `json:"status"`
+		Type    string   `json:"type"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -37,13 +37,6 @@ func UpdateOneGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	update := bson.M{"$set": bson.M{
-		"name":   payload.Name,
-		"chats":  payload.Chats,
-		"status": payload.Status,
-		"type":   payload.Type,
-	}}
-
 	mongoURI := os.Getenv(utils.MONGODB_URI)
 	opts := options.Client().ApplyURI(mongoURI)
 	client, err := mongo.Connect(opts)
@@ -52,6 +45,30 @@ func UpdateOneGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer client.Disconnect(ctx)
+
+	// Buscar os chats com base nos user_ids
+	chatCol := client.Database(database.GetDB()).Collection("chats")
+	filter := bson.M{"user_id": bson.M{"$in": payload.UserIds}}
+	cursor, err := chatCol.Find(ctx, filter)
+	if err != nil {
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_SPACE_DESK_CHAT_ID)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var chats []string
+	if err = cursor.All(ctx, &chats); err != nil {
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_SPACE_DESK_CHAT_ID)
+		return
+	}
+
+	update := bson.M{"$set": bson.M{
+		"name":     payload.Name,
+		"user_ids": payload.UserIds,
+		"status":   payload.Status,
+		"type":     payload.Type,
+		"chats":    chats,
+	}}
 
 	collection := client.Database(database.GetDB()).Collection("groups")
 

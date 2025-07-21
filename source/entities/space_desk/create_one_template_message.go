@@ -42,7 +42,7 @@ func CreateOneTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Enviar para 360dialog
-	apiKey := os.Getenv("SPACE_DESK_API_KEY")
+	apiKey := os.Getenv("SPACE_DESK_API_KEY") // tirar a duvida de como funciona os templates e qual env devemos colocar
 	if apiKey == "" {
 		http.Error(w, "API Key da 360dialog não configurada.", http.StatusInternalServerError)
 		return

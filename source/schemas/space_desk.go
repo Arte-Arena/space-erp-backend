@@ -204,12 +204,12 @@ type SpaceDeskChat struct {
 }
 
 type Group struct {
-	ID     bson.ObjectID `bson:"_id,omitempty" json:"id"`
-	Name   string        `bson:"name" json:"name"`
-	Status string        `bson:"status" json:"status"`
-	Type   string        `bson:"type" json:"type"`
-	Chats  []string      `bson:"chats" json:"chats"`
-	Users  []string      `bson:"users" json:"users"`
+	ID      bson.ObjectID `bson:"_id,omitempty" json:"id"`
+	Name    string        `bson:"name" json:"name"`
+	UserIDs []string      `bson:"user_ids" json:"user_ids"`
+	Status  string        `bson:"status" json:"status"`
+	Type    string        `bson:"type" json:"type"`
+	Chats   []string      `bson:"chats" json:"chats"`
 }
 
 type SpaceDeskStatus struct {
