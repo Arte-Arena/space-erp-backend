@@ -19,12 +19,18 @@ const (
 )
 
 type User struct {
-	ID         bson.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	OldID      uint64        `json:"old_id" bson:"old_id"`
-	Name       string        `json:"name" bson:"name"`
-	Email      string        `json:"email" bson:"email"`
-	Role       []string      `json:"role" bson:"role"`
-	Commission uint8         `json:"commission" bson:"commission"`
-	CreatedAt  time.Time     `json:"created_at" bson:"created_at"`
-	UpdatedAt  time.Time     `json:"updated_at" bson:"updated_at"`
+	ID         bson.ObjectID    `json:"_id,omitempty" bson:"_id,omitempty"`
+	OldID      uint64           `json:"old_id" bson:"old_id"`
+	Name       string           `json:"name" bson:"name"`
+	Email      string           `json:"email" bson:"email"`
+	Role       []string         `json:"role" bson:"role"`
+	Commission []CommissionRule `json:"commission" bson:"commission"`
+	CreatedAt  time.Time        `json:"created_at" bson:"created_at"`
+	UpdatedAt  time.Time        `json:"updated_at" bson:"updated_at"`
+}
+
+type CommissionRule struct {
+	MinSales   uint64  `json:"min_sales" bson:"min_sales"`
+	MaxSales   uint64  `json:"max_sales" bson:"max_sales"`
+	Percentage float64 `json:"percentage" bson:"percentage"`
 }

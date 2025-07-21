@@ -79,6 +79,7 @@ func CreateOneMedia(w http.ResponseWriter, r *http.Request) {
 	colChats := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
 	var chatDoc struct {
 		ClientePhoneNumber string `bson:"cliente_phone_number"`
+		CompanyPhoneNumber string `bson:"company_phone_number"`
 	}
 
 	objID, err := bson.ObjectIDFromHex(chatId)
@@ -106,6 +107,14 @@ func CreateOneMedia(w http.ResponseWriter, r *http.Request) {
 	}
 	bodyBytes, _ := json.Marshal(payload)
 
+	var apiKey string
+	switch chatDoc.CompanyPhoneNumber {
+	case "5511958339942":
+		apiKey = os.Getenv(utils.SPACE_DESK_API_KEY)
+	case "551123371548":
+		apiKey = os.Getenv(utils.SPACE_DESK_API_KEY_2)
+	}
+
 	req360, _ := http.NewRequestWithContext(
 		context.Background(),
 		http.MethodPost,
@@ -113,7 +122,7 @@ func CreateOneMedia(w http.ResponseWriter, r *http.Request) {
 		bytes.NewReader(bodyBytes),
 	)
 	req360.Header.Set("Content-Type", "application/json")
-	req360.Header.Set("D360-API-KEY", os.Getenv(utils.SPACE_DESK_API_KEY))
+	req360.Header.Set("D360-API-KEY", apiKey)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp360, err := client.Do(req360)

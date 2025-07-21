@@ -73,9 +73,15 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.Commission > 100 {
-		utils.SendResponse(w, http.StatusBadRequest, "Comissão deve ser entre 0 e 100", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
-		return
+	for _, rule := range user.Commission {
+		if rule.Percentage < 0 || rule.Percentage > 100 {
+			utils.SendResponse(w, http.StatusBadRequest, "Cada comissão deve ser entre 0 e 100", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
+			return
+		}
+		if rule.MinSales > rule.MaxSales {
+			utils.SendResponse(w, http.StatusBadRequest, "MinSales não pode ser maior que MaxSales", nil, utils.SPACE_DESK_INVALID_REQUEST_DATA)
+			return
+		}
 	}
 
 	collection := client.Database(database.GetDB()).Collection(database.COLLECTION_USERS)
@@ -96,7 +102,9 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 		updateDoc = append(updateDoc, bson.E{Key: "role", Value: user.Role})
 	}
 
-	updateDoc = append(updateDoc, bson.E{Key: "commission", Value: user.Commission})
+	if user.Commission != nil {
+		updateDoc = append(updateDoc, bson.E{Key: "commission", Value: user.Commission})
+	}
 
 	updateDoc = append(updateDoc, bson.E{Key: "updated_at", Value: time.Now()})
 
