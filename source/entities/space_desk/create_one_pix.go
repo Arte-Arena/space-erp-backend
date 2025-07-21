@@ -143,9 +143,9 @@ func CreatePixMessage(w http.ResponseWriter, r *http.Request) {
 	var apiKey string
 	switch chatDoc.CompanyPhoneNumber {
 	case "5511958339942":
-		apiKey = os.Getenv(utils.SPACE_DESK_API_KEY)
-	case "551123371548":
 		apiKey = os.Getenv(utils.SPACE_DESK_API_KEY_2)
+	case "551123371548":
+		apiKey = os.Getenv(utils.SPACE_DESK_API_KEY)
 	}
 
 	req360.Header.Set("Content-Type", "application/json")
