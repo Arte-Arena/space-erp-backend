@@ -21,8 +21,8 @@ func AddUsersToGroup(w http.ResponseWriter, r *http.Request) {
 
 	// 1) Decodifica payload
 	var payload struct {
-		GroupIDs []string `json:"group_ids"`
-		UserIDs  []string `json:"user_ids"`
+		GroupIDs []string        `json:"group_ids"`
+		UserIDs  []bson.ObjectID `json:"user_ids"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		utils.SendResponse(w, http.StatusBadRequest, "", nil, utils.INVALID_SPACE_DESK_GROUP_REQUEST_DATA)
@@ -68,7 +68,7 @@ func AddUsersToGroup(w http.ResponseWriter, r *http.Request) {
 			idSet[old] = struct{}{}
 		}
 		for _, old := range payload.UserIDs {
-			idSet[old] = struct{}{}
+			idSet[old.Hex()] = struct{}{}
 		}
 		mergedIDs := make([]string, 0, len(idSet))
 		for old := range idSet {
