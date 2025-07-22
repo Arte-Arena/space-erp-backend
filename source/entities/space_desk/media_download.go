@@ -1,7 +1,11 @@
 package spacedesk
 
 import (
+	"api/database"
+	"api/utils"
+	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -9,13 +13,17 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // Estrutura do cache para arquivos binários
 type fileCacheItem struct {
 	data        []byte
 	mimeType    string
-	disposition string // content-disposition header
+	disposition string
 	timestamp   time.Time
 }
 
@@ -25,83 +33,160 @@ var (
 	fileCacheTTL   = 2 * time.Hour
 )
 
-// Limpa arquivos expirados do cache a cada 30 minutos
-func cleanupFileCache() {
-	for {
-		time.Sleep(30 * time.Minute)
-		now := time.Now()
-		fileCacheMutex.Lock()
-		for k, v := range fileCache {
-			if now.Sub(v.timestamp) > fileCacheTTL {
-				delete(fileCache, k)
+func init() {
+	go func() {
+		for {
+			time.Sleep(30 * time.Minute)
+			now := time.Now()
+			fileCacheMutex.Lock()
+			for k, v := range fileCache {
+				if now.Sub(v.timestamp) > fileCacheTTL {
+					delete(fileCache, k)
+				}
 			}
+			fileCacheMutex.Unlock()
 		}
-		fileCacheMutex.Unlock()
-	}
+	}()
 }
 
-func init() {
-	go cleanupFileCache()
+// fetchMetadata tenta buscar metadata e devolve code10=true se vier FacebookApiException code 10
+func fetchMetadata(client *http.Client, url, apiKey string) (
+	meta struct {
+		URL      string `json:"url"`
+		MimeType string `json:"mime_type"`
+	},
+	code10 bool,
+	err error,
+) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return meta, false, fmt.Errorf("criação requisição metadata: %w", err)
+	}
+	req.Header.Set("D360-API-KEY", apiKey)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return meta, false, fmt.Errorf("fetch metadata: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		// tenta ler code 10 do JSON de erro
+		var fbErr struct {
+			Error struct {
+				Code int `json:"code"`
+			} `json:"error"`
+		}
+		_ = json.Unmarshal(body, &fbErr)
+		if fbErr.Error.Code == 10 {
+			return meta, true, nil
+		}
+		return meta, false, fmt.Errorf("metadata non-OK %d: %s", resp.StatusCode, string(body))
+	}
+
+	// decodifica metadata válida
+	if err := json.Unmarshal(body, &meta); err != nil {
+		return meta, false, fmt.Errorf("decode metadata: %w", err)
+	}
+	return meta, false, nil
+}
+
+func clearFileCache(mediaID string) {
+	fileCacheMutex.Lock()
+	delete(fileCache, mediaID)
+	fileCacheMutex.Unlock()
 }
 
 func HandlerMediaDownload(w http.ResponseWriter, r *http.Request) {
-	mediaId := r.URL.Query().Get("media_id")
-	if mediaId == "" {
-		http.Error(w, "media_id obrigatório", http.StatusBadRequest)
+	mediaID := r.URL.Query().Get("media_id")
+	chatID := r.URL.Query().Get("chat_id")
+	if mediaID == "" || chatID == "" {
+		http.Error(w, "media_id e chat_id são obrigatórios", http.StatusBadRequest)
 		return
 	}
 
-	// Tenta buscar do cache antes de chamar a API
+	// --- busca no MongoDB a chave primária/secundária ---
+	ctx, cancel := context.WithTimeout(r.Context(), database.MONGO_TIMEOUT)
+	defer cancel()
+	mongoURI := os.Getenv(utils.MONGODB_URI)
+	clientOpts := options.Client().ApplyURI(mongoURI)
+	dbClient, err := mongo.Connect(clientOpts)
+	if err != nil {
+		log.Printf("[MediaDownload][%s] mongo connect error: %v", mediaID, err)
+		utils.SendResponse(w, http.StatusInternalServerError, "Erro ao conectar ao MongoDB: "+err.Error(), nil, utils.CANNOT_CONNECT_TO_MONGODB)
+		return
+	}
+	defer dbClient.Disconnect(ctx)
+
+	var chatDoc struct {
+		CompanyPhoneNumber string `bson:"company_phone_number"`
+	}
+	objID, _ := bson.ObjectIDFromHex(chatID)
+	col := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
+	if err := col.FindOne(ctx, bson.M{"_id": objID}).Decode(&chatDoc); err != nil {
+		clearFileCache(mediaID)
+		if err == mongo.ErrNoDocuments {
+			utils.SendResponse(w, http.StatusNotFound, "Chat não encontrado", nil, utils.CANNOT_FIND_SPACE_DESK_GROUP_ID_FORMAT)
+		} else {
+			utils.SendResponse(w, http.StatusInternalServerError, "Erro ao buscar chat: "+err.Error(), nil, utils.CANNOT_FIND_SPACE_DESK_GROUP_ID_FORMAT)
+		}
+		return
+	}
+
+	primaryKey := os.Getenv(utils.SPACE_DESK_API_KEY)
+	altKey := os.Getenv(utils.SPACE_DESK_API_KEY_2)
+	if chatDoc.CompanyPhoneNumber == "5511958339942" {
+		primaryKey, altKey = altKey, primaryKey
+	}
+
+	// --- check cache ---
 	fileCacheMutex.RLock()
-	cache, ok := fileCache[mediaId]
+	if item, ok := fileCache[mediaID]; ok && time.Since(item.timestamp) < fileCacheTTL {
+		fileCacheMutex.RUnlock()
+		w.Header().Set("Content-Type", item.mimeType)
+		w.Header().Set("Content-Disposition", item.disposition)
+		w.WriteHeader(http.StatusOK)
+		w.Write(item.data)
+		return
+	}
 	fileCacheMutex.RUnlock()
 
-	if ok && time.Since(cache.timestamp) < fileCacheTTL {
-		w.Header().Set("Content-Type", cache.mimeType)
-		if cache.disposition != "" {
-			w.Header().Set("Content-Disposition", cache.disposition)
-		} else {
-			w.Header().Set("Content-Disposition", "attachment; filename=\"arquivo\"")
-		}
-		w.WriteHeader(http.StatusOK)
-		w.Write(cache.data)
-		return
-	}
-
-	apiKey := os.Getenv("SPACE_DESK_API_KEY")
 	client := &http.Client{Timeout: 15 * time.Second}
+	metaURL := "https://waba-v2.360dialog.io/" + mediaID
 
-	// 1. Busca metadata da mídia
-	metaUrl := "https://waba-v2.360dialog.io/media/" + mediaId
-	reqMeta, _ := http.NewRequest(http.MethodGet, metaUrl, nil)
-	reqMeta.Header.Set("D360-API-KEY", apiKey)
-	respMeta, err := client.Do(reqMeta)
-	if err != nil || respMeta.StatusCode != http.StatusOK {
-		log.Printf("[MediaDownload] Erro metadata: %v", err)
+	// 1ª tentativa de metadata
+	meta, code10, ferr := fetchMetadata(client, metaURL, primaryKey)
+	if ferr != nil && !code10 {
+		log.Printf("[MediaDownload][%s] metadata error: %v", mediaID, ferr)
+		clearFileCache(mediaID)
 		http.Error(w, "Erro ao buscar metadata", http.StatusBadGateway)
 		return
 	}
-	defer respMeta.Body.Close()
-
-	var meta struct {
-		URL      string `json:"url"`
-		MimeType string `json:"mime_type"`
+	// se permission denied (code10), tenta com a chave secundária
+	usedKey := primaryKey
+	if code10 {
+		log.Printf("[MediaDownload][%s] permission denied, retrying with alternate key", mediaID)
+		meta, code10, ferr = fetchMetadata(client, metaURL, altKey)
+		if ferr != nil || code10 {
+			log.Printf("[MediaDownload][%s] retry failed: err=%v code10=%v", mediaID, ferr, code10)
+			clearFileCache(mediaID)
+			http.Error(w, "Permission denied na API", http.StatusForbidden)
+			return
+		}
+		usedKey = altKey
 	}
-	if err := json.NewDecoder(respMeta.Body).Decode(&meta); err != nil {
-		log.Printf("[MediaDownload] Erro decode: %v", err)
-		http.Error(w, "Erro na metadata", http.StatusBadGateway)
-		return
-	}
 
-	// 2. Troca o host para waba-v2.360dialog.io, conforme doc
+	// --- faz download do binário ---
 	downloadURL := strings.Replace(meta.URL, "https://lookaside.fbsbx.com", "https://waba-v2.360dialog.io", 1)
-
-	// 3. Faz GET na URL trocada, COM o header D360-API-KEY
 	reqFile, _ := http.NewRequest(http.MethodGet, downloadURL, nil)
-	reqFile.Header.Set("D360-API-KEY", apiKey)
+	reqFile.Header.Set("D360-API-KEY", usedKey)
 	respFile, err := client.Do(reqFile)
 	if err != nil || respFile.StatusCode != http.StatusOK {
-		log.Printf("[MediaDownload] Erro arquivo: %v", err)
+		body, _ := io.ReadAll(respFile.Body)
+		log.Printf("[MediaDownload][%s] file fetch error status=%d err=%v body=%s",
+			mediaID, respFile.StatusCode, err, string(body))
+		clearFileCache(mediaID)
 		http.Error(w, "Erro ao baixar arquivo", http.StatusBadGateway)
 		return
 	}
@@ -109,30 +194,24 @@ func HandlerMediaDownload(w http.ResponseWriter, r *http.Request) {
 
 	data, err := io.ReadAll(respFile.Body)
 	if err != nil {
-		log.Printf("[MediaDownload] Erro lendo arquivo: %v", err)
+		log.Printf("[MediaDownload][%s] file read error: %v", mediaID, err)
+		clearFileCache(mediaID)
 		http.Error(w, "Erro ao ler arquivo", http.StatusBadGateway)
 		return
 	}
 
-	mimeType := meta.MimeType
-	disposition := respFile.Header.Get("Content-Disposition")
-	if disposition == "" {
-		disposition = "attachment; filename=\"arquivo\""
+	disp := respFile.Header.Get("Content-Disposition")
+	if disp == "" {
+		disp = "attachment; filename=\"arquivo\""
 	}
 
-	// 6. Salva no cache
+	// --- salva no cache e devolve ---
 	fileCacheMutex.Lock()
-	fileCache[mediaId] = fileCacheItem{
-		data:        data,
-		mimeType:    mimeType,
-		disposition: disposition,
-		timestamp:   time.Now(),
-	}
+	fileCache[mediaID] = fileCacheItem{data: data, mimeType: meta.MimeType, disposition: disp, timestamp: time.Now()}
 	fileCacheMutex.Unlock()
 
-	// 4. Copia headers relevantes e faz streaming do arquivo
-	w.Header().Set("Content-Type", mimeType)
-	w.Header().Set("Content-Disposition", disposition)
+	w.Header().Set("Content-Type", meta.MimeType)
+	w.Header().Set("Content-Disposition", disp)
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }
