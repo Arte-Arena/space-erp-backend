@@ -20,6 +20,7 @@ const (
 	COLLECTION_SPACE_DESK_CHAT            = "space_desk_chat"
 	COLLECTION_SPACE_DESK_MESSAGE         = "space_desk_message"
 	COLLECTION_SPACE_DESK_CONFIG          = "space_desk_config"
+	COLLECTION_SPACE_DESK_GROUPS          = "groups"
 	COLLECTION_SPACE_DESK_READY_MESSAGE   = "ready_chat_messages"
 	COLLECTION_COMMERCIAL_GOALS           = "commercial_goals"
 )
