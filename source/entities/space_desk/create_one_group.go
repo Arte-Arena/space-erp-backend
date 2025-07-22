@@ -17,10 +17,10 @@ import (
 )
 
 type groupPayload struct {
-	Name    string   `json:"name"`
-	UserIDs []string `json:"user_ids"`
-	Status  string   `json:"status"`
-	Type    string   `json:"type"`
+	Name    string          `json:"name"`
+	UserIDs []bson.ObjectID `json:"user_ids"`
+	Status  string          `json:"status"`
+	Type    string          `json:"type"`
 }
 
 func CreateOneGroup(w http.ResponseWriter, r *http.Request) {
