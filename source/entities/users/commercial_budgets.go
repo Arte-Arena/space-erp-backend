@@ -61,6 +61,7 @@ func GetCommercialBudgets(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	pageStr := params.Get("page")
 	pageSizeStr := params.Get("pageSize")
+	oldIDStr := params.Get("old_id")
 	var page int64 = 1
 	var pageSize int64 = 25
 	if p, err := strconv.ParseInt(pageStr, 10, 64); err == nil && p > 0 {
@@ -77,6 +78,14 @@ func GetCommercialBudgets(w http.ResponseWriter, r *http.Request) {
 	coll := client.Database(database.GetDB()).Collection(database.COLLECTION_BUDGETS)
 
 	filter := bson.D{{Key: "seller", Value: userDoc.ID}}
+	if oldIDStr != "" {
+		if oldID, err := strconv.ParseInt(oldIDStr, 10, 64); err == nil {
+			filter = append(filter, bson.E{Key: "old_id", Value: oldID})
+		} else {
+			utils.SendResponse(w, http.StatusBadRequest, "Parâmetro old_id inválido", nil, 0)
+			return
+		}
+	}
 
 	totalItems, err := coll.CountDocuments(ctx, filter)
 	if err != nil {
