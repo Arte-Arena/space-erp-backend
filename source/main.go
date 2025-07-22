@@ -101,7 +101,6 @@ func main() {
 
 	mux.Handle("POST /v1/space-desk/group", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneGroup)))
 	mux.Handle("PATCH /v1/space-desk/group", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateOneGroup)))
-	mux.Handle("PATCH /v1/space-desk/group-users", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateGroupUsers)))
 	mux.Handle("POST /v1/space-desk/group-users", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.AddUsersToGroup)))
 	mux.Handle("GET /v1/space-desk/group", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllGroups)))
 	mux.Handle("DELETE /v1/space-desk/group", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeleteGroup)))

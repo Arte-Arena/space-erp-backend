@@ -41,5 +41,33 @@ func GetAllGroups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	chatCol := client.Database(database.GetDB()).Collection("chats")
+	for i, group := range groups {
+		userIDs, ok := group["user_ids"].([]any)
+		if !ok {
+			continue
+		}
+		var ids []string
+		for _, id := range userIDs {
+			if strID, ok := id.(string); ok {
+				ids = append(ids, strID)
+			}
+		}
+		filter := bson.M{"user_id": bson.M{"$in": ids}}
+		cursor, err := chatCol.Find(ctx, filter)
+		if err != nil {
+			utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_SPACE_DESK_CHAT_ID)
+			return
+		}
+		defer cursor.Close(ctx)
+		var chats []bson.M
+		if err := cursor.All(ctx, &chats); err != nil {
+			utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_SPACE_DESK_CHAT_ID)
+			return
+		}
+		group["chats_list"] = chats
+		groups[i] = group
+	}
+
 	utils.SendResponse(w, http.StatusOK, "Groups retrieved successfully", groups, 0)
 }
