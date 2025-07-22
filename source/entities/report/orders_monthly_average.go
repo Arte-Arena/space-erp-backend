@@ -30,12 +30,14 @@ func GetOrdersMonthlyAverage(from, until string) (float64, error) {
 	if from != "" || until != "" {
 		dateFilter := bson.D{}
 		if from != "" {
-			if fromTime, err := time.Parse(time.RFC3339, from); err == nil {
+			if fromTime, err := time.Parse("2006-01-02", from); err == nil {
+				fromTime = time.Date(fromTime.Year(), fromTime.Month(), fromTime.Day(), 0, 0, 0, 0, fromTime.Location())
 				dateFilter = append(dateFilter, bson.E{Key: "$gte", Value: fromTime})
 			}
 		}
 		if until != "" {
-			if untilTime, err := time.Parse(time.RFC3339, until); err == nil {
+			if untilTime, err := time.Parse("2006-01-02", until); err == nil {
+				untilTime = time.Date(untilTime.Year(), untilTime.Month(), untilTime.Day(), 23, 59, 59, 999999999, untilTime.Location())
 				dateFilter = append(dateFilter, bson.E{Key: "$lte", Value: untilTime})
 			}
 		}
@@ -51,8 +53,8 @@ func GetOrdersMonthlyAverage(from, until string) (float64, error) {
 
 	var months float64 = 1
 	if from != "" && until != "" {
-		fromTime, err1 := time.Parse(time.RFC3339, from)
-		untilTime, err2 := time.Parse(time.RFC3339, until)
+		fromTime, err1 := time.Parse("2006-01-02", from)
+		untilTime, err2 := time.Parse("2006-01-02", until)
 		if err1 == nil && err2 == nil && untilTime.After(fromTime) {
 			years := untilTime.Year() - fromTime.Year()
 			months = float64(years*12 + int(untilTime.Month()) - int(fromTime.Month()) + 1)
