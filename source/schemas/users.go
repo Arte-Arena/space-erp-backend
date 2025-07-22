@@ -27,8 +27,31 @@ type User struct {
 	Commission []CommissionRule `json:"commission" bson:"commission"`
 	CreatedAt  time.Time        `json:"created_at" bson:"created_at"`
 	UpdatedAt  time.Time        `json:"updated_at" bson:"updated_at"`
+	Goals      []IndividualGoal `json:"goals" bson:"goals"`
 }
 
+type GoalType string
+
+const (
+	GoalTypeBudgets GoalType = "budgets"
+	GoalTypeOrders  GoalType = "orders"
+	GoalTypeLeads   GoalType = "leads"
+)
+
+type GoalPeriod string
+
+const (
+	GoalPeriodDaily   GoalPeriod = "daily"
+	GoalPeriodWeekly  GoalPeriod = "weekly"
+	GoalPeriodMonthly GoalPeriod = "monthly"
+)
+
+type IndividualGoal struct {
+	Name   string     `json:"name" bson:"name"`
+	Type   GoalType   `json:"type" bson:"type"`
+	Value  uint64     `json:"value" bson:"value"`
+	Period GoalPeriod `json:"period" bson:"period"`
+}
 type CommissionRule struct {
 	MinSales   uint64  `json:"min_sales" bson:"min_sales"`
 	MaxSales   uint64  `json:"max_sales" bson:"max_sales"`

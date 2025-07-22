@@ -106,6 +106,10 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 		updateDoc = append(updateDoc, bson.E{Key: "commission", Value: user.Commission})
 	}
 
+	if user.Goals != nil {
+		updateDoc = append(updateDoc, bson.E{Key: "goals", Value: user.Goals})
+	}
+
 	updateDoc = append(updateDoc, bson.E{Key: "updated_at", Value: time.Now()})
 
 	if len(updateDoc) == 0 {
