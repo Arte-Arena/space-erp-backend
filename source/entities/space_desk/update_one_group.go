@@ -14,11 +14,11 @@ import (
 )
 
 type updateGroupPayload struct {
-	ID      string   `json:"id"`
-	Name    string   `json:"name"`
-	UserIDs []string `json:"user_ids"`
-	Status  string   `json:"status"`
-	Type    string   `json:"type"`
+	ID      string          `json:"id"`
+	Name    string          `json:"name"`
+	UserIDs []bson.ObjectID `json:"user_ids"`
+	Status  string          `json:"status"`
+	Type    string          `json:"type"`
 }
 
 func UpdateOneGroup(w http.ResponseWriter, r *http.Request) {
