@@ -151,6 +151,22 @@ func GetCommercialBudgetsReport(w http.ResponseWriter, r *http.Request) {
 		responseData["budgets_conversion_rate"] = rate
 	}
 
+	if _, ok := params["budgets_daily_count"]; ok {
+		v, err := report.GetCommercialBudgetsDailyCount(userDoc.ID, period[0], period[1])
+		if handleErr(err) {
+			return
+		}
+		responseData["budgets_daily_count"] = v
+	}
+
+	if _, ok := params["budgets_daily_value"]; ok {
+		v, err := report.GetCommercialBudgetsDailyValue(userDoc.ID, period[0], period[1])
+		if handleErr(err) {
+			return
+		}
+		responseData["budgets_daily_value"] = v
+	}
+
 	if len(responseData) == 0 {
 		utils.SendResponse(w, http.StatusBadRequest, "Nenhum relatório selecionado", nil, 0)
 		return
