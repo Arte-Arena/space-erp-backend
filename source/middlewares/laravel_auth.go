@@ -22,7 +22,14 @@ type LaravelUser struct {
 func LaravelAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv(utils.ENV) == utils.ENV_DEVELOPMENT {
-			next.ServeHTTP(w, r)
+			// Usuário fictício para ambiente de desenvolvimento
+			user := LaravelUser{
+				ID:    2,
+				Name:  "Dev User",
+				Email: "devuser@example.com",
+			}
+			ctx := context.WithValue(r.Context(), UserContextKey, user)
+			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 

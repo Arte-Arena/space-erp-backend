@@ -82,6 +82,22 @@ func GetCommercialOrdersReport(w http.ResponseWriter, r *http.Request) {
 		responseData["orders_monthly_performance"] = v
 	}
 
+	if _, ok := params["orders_daily_count"]; ok {
+		v, err := report.GetCommercialOrdersDailyCount(userDoc.ID, period[0], period[1])
+		if handleErr(err) {
+			return
+		}
+		responseData["orders_daily_count"] = v
+	}
+
+	if _, ok := params["orders_daily_value"]; ok {
+		v, err := report.GetCommercialOrdersDailyValue(userDoc.ID, period[0], period[1])
+		if handleErr(err) {
+			return
+		}
+		responseData["orders_daily_value"] = v
+	}
+
 	if len(responseData) == 0 {
 		utils.SendResponse(w, http.StatusBadRequest, "Nenhum relatório selecionado", nil, 0)
 		return
