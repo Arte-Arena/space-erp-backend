@@ -226,6 +226,8 @@ func CreateOneMessage(w http.ResponseWriter, r *http.Request) {
 			apiKey = os.Getenv(utils.SPACE_DESK_API_KEY_2)
 		case "551123371548":
 			apiKey = os.Getenv(utils.SPACE_DESK_API_KEY)
+		// default:
+		// 	apiKey = os.Getenv(utils.SPACE_DESK_API_KEY)
 		}
 
 		if apiKey == "" {
