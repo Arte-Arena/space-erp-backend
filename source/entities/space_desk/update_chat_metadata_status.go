@@ -17,7 +17,7 @@ import (
 )
 
 type UpdateChatStatusBody struct {
-	ID           string `json:"id"` // pode ser _id do Mongo ou cliente_phone_number
+	ID           string `json:"id"` 
 	Closed       bool   `json:"closed" bson:"closed"`
 	NeedTemplate bool   `json:"need_template" bson:"need_template"`
 	Blocked      *bool  `json:"blocked,omitempty"`
