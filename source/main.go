@@ -108,12 +108,14 @@ func main() {
 	mux.Handle("DELETE /v1/space-desk/group-users", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeleteUserFromGroup)))
 	mux.Handle("GET /v1/space-desk/group-chats/{groupId}", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetChatsFromGroup)))
 
-	mux.Handle("PATCH /v1/space-desk/chats/status", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateChatStatus)))
-	mux.Handle("PATCH /v1/space-desk/chats/user", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateChatUser)))
+	mux.Handle("POST /v1/space-desk/group-to-chat", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.AddGroupToChat)))
 
 	mux.Handle("POST /v1/space-desk/group-chat", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.AddChatToGroup)))
 	mux.Handle("DELETE /v1/space-desk/group-chat", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.DeleteChatFromGroup)))
 	mux.Handle("GET /v1/space-desk/chats-group", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetChatsByGroup)))
+
+	mux.Handle("PATCH /v1/space-desk/chats/status", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateChatStatus)))
+	mux.Handle("PATCH /v1/space-desk/chats/user", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateChatUser)))
 
 	mux.Handle("POST /v1/space-desk/ready-messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.CreateOneReadyMessage)))
 	mux.Handle("PUT /v1/space-desk/ready-messages", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.UpdateOneReadyMessage)))
