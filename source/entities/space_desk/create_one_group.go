@@ -20,7 +20,6 @@ type groupPayload struct {
 	Name    string          `json:"name"`
 	UserIDs []bson.ObjectID `json:"user_ids"`
 	Status  string          `json:"status"`
-	Type    string          `json:"type"`
 }
 
 func CreateOneGroup(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +78,6 @@ func CreateOneGroup(w http.ResponseWriter, r *http.Request) {
 		"name":       payload.Name,
 		"user_ids":   payload.UserIDs,
 		"status":     payload.Status,
-		"type":       payload.Type,
 		"chats":      chatIDs,
 		"created_at": time.Now(),
 	}

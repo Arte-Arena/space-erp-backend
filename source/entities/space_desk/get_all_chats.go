@@ -81,11 +81,11 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 	numbers := query["numbers[]"]
 
 	// valores padrão
-	limit := 100
+	limit := 50
 	page := 1
 
 	if v, err := strconv.Atoi(limitStr); err == nil && v > 0 {
-		if v <= 100 {
+		if v <= 50 {
 			limit = v
 		}
 	}
@@ -113,6 +113,16 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 			"Parâmetro 'status' inválido. Use 'closed' ou 'opened'", nil, 0)
 		return
 	}
+
+	totalItems, err := col.CountDocuments(ctx, filter)
+	if err != nil {
+		log.Printf("[GetAllChats] erro ao contar documentos. filter=%v err=%v", filter, err)
+		utils.SendResponse(w, http.StatusInternalServerError,
+			"Erro ao contar chats: "+err.Error(), nil, utils.CANNOT_FIND_LEADS_IN_MONGODB)
+		return
+	}
+
+	totalPages := int((totalItems + int64(limit) - 1) / int64(limit))
 
 	findOptions := options.Find().
 		SetSort(bson.D{{Key: "last_message_timestamp", Value: -1}}).
@@ -179,8 +189,18 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 				tj = parsed
 			}
 		}
-		return ti > tj 
+		return ti > tj
 	})
 
-	utils.SendResponse(w, http.StatusOK, "Chats encontrados com sucesso", chats, 0)
+	response := map[string]any{
+		"chats": chats,
+		"pagination": map[string]any{
+			"page":        page,
+			"page_size":   limit,
+			"total_items": totalItems,
+			"total_pages": totalPages,
+		},
+	}
+
+	utils.SendResponse(w, http.StatusOK, "Chats encontrados com sucesso", response, 0)
 }
