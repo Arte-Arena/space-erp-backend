@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -119,11 +120,26 @@ func HandlerMediaBase64(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Configura Redis
+	var rdb *redis.Client
+	redisURI := os.Getenv("REDIS_URI")
+	opts, err := redis.ParseURL(redisURI)
+	if err == nil {
+		rdb = redis.NewClient(opts)
+		defer rdb.Close()
+	}
+
+	redisKey := "spacedesk:media:env:" + mediaID
+	cachedEnv := ""
+	if rdb != nil {
+		val, err := rdb.Get(ctx, redisKey).Result()
+		if err == nil {
+			cachedEnv = val
+		}
+	}
+
 	primaryKey := os.Getenv(utils.SPACE_DESK_API_KEY)
 	altKey := os.Getenv(utils.SPACE_DESK_API_KEY_2)
-	if chatDoc.CompanyPhoneNumber == "5511958339942" {
-		primaryKey, altKey = altKey, primaryKey
-	}
 
 	// 1) Cache lookup
 	base64CacheMutex.RLock()
@@ -138,16 +154,19 @@ func HandlerMediaBase64(w http.ResponseWriter, r *http.Request) {
 	client := &http.Client{Timeout: 15 * time.Second}
 	metaURL := fmt.Sprintf("https://waba-v2.360dialog.io/%s", mediaID)
 
-	meta, code10, ferr := fetchMeta(client, metaURL, primaryKey)
+	usedKey := primaryKey
+	if cachedEnv == "2" {
+		usedKey = altKey
+	}
+
+	meta, code10, ferr := fetchMeta(client, metaURL, usedKey)
 	if ferr != nil && !code10 {
 		log.Printf("[Base64] metadata error: %v", ferr)
 		http.Error(w, "falha metadata", http.StatusBadGateway)
 		return
 	}
-	usedKey := primaryKey
 
-	// 5) Se code10, tenta fallback
-	if code10 {
+	if code10 && cachedEnv == "" {
 		log.Printf("[Base64] Permission denied com primary, retrying with fallback key")
 		meta, code10, ferr = fetchMeta(client, metaURL, altKey)
 		if ferr != nil || code10 {
@@ -156,6 +175,11 @@ func HandlerMediaBase64(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		usedKey = altKey
+		if rdb != nil {
+			rdb.Set(ctx, redisKey, "2", 90*24*time.Hour)
+		}
+	} else if cachedEnv == "" && rdb != nil {
+		rdb.Set(ctx, redisKey, "1", 90*24*time.Hour)
 	}
 
 	signed := strings.Replace(meta.URL,
