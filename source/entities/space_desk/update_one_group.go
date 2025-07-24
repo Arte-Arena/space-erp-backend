@@ -18,7 +18,6 @@ type updateGroupPayload struct {
 	Name    string          `json:"name"`
 	UserIDs []bson.ObjectID `json:"user_ids"`
 	Status  string          `json:"status"`
-	Type    string          `json:"type"`
 }
 
 func UpdateOneGroup(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +80,6 @@ func UpdateOneGroup(w http.ResponseWriter, r *http.Request) {
 		"name":     payload.Name,
 		"user_ids": payload.UserIDs,
 		"status":   payload.Status,
-		"type":     payload.Type,
 		"chats":    chatIDs,
 	}}
 	groupsCol := client.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_GROUPS)
