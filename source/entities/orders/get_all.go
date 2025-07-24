@@ -206,7 +206,7 @@ func buildFilterFromQueryParams(r *http.Request) bson.D {
 		}
 	}
 
-	dateFields := []string{"created_at", "updated_at", "expected_date"}
+	dateFields := []string{"created_at", "updated_at", "expected_date", "payment_date"}
 	for _, field := range dateFields {
 		if startDate := queryParams.Get(field + "_start"); startDate != "" {
 			if parsedDate, err := time.Parse(time.RFC3339, startDate); err == nil {
