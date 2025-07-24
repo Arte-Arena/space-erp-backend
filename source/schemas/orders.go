@@ -172,4 +172,5 @@ type Order struct {
 	Notes              string        `json:"notes,omitempty" bson:"notes,omitempty"`
 	CreatedAt          time.Time     `json:"created_at" bson:"created_at"`
 	UpdatedAt          time.Time     `json:"updated_at" bson:"updated_at"`
+	PaymentDate        *time.Time    `json:"payment_date,omitempty" bson:"payment_date,omitempty"`
 }
