@@ -81,11 +81,11 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 	numbers := query["numbers[]"]
 
 	// valores padrão
-	limit := 50
+	limit := 500
 	page := 1
 
 	if v, err := strconv.Atoi(limitStr); err == nil && v > 0 {
-		if v <= 50 {
+		if v <= 500 {
 			limit = v
 		}
 	}
