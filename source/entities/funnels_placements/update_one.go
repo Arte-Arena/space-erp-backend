@@ -78,5 +78,15 @@ func UpdateOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var updatedPlacement schemas.FunnelPlacement
+	err = collection.FindOne(ctx, filter).Decode(&updatedPlacement)
+	if err == nil {
+		broadcastFunnelPlacementUpdate(FunnelPlacementWSMessage{
+			Action:    "update",
+			Placement: updatedPlacement,
+			Details:   "Posicionamento de funil atualizado",
+		})
+	}
+
 	utils.SendResponse(w, http.StatusOK, "", nil, 0)
 }

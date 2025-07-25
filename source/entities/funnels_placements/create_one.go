@@ -44,5 +44,11 @@ func CreateOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	broadcastFunnelPlacementUpdate(FunnelPlacementWSMessage{
+		Action:    "create",
+		Placement: funnelPlacement,
+		Details:   "Novo posicionamento de funil criado",
+	})
+
 	utils.SendResponse(w, http.StatusCreated, "", funnelPlacement, 0)
 }
