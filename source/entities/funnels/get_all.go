@@ -27,39 +27,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_FUNNELS)
 
-	pipeline := mongo.Pipeline{
-		{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$stages"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}},
-		{{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: database.COLLECTION_LEADS},
-			{Key: "localField", Value: "stages.related_leads"},
-			{Key: "foreignField", Value: "_id"},
-			{Key: "as", Value: "stages.related_leads_data"},
-		}}},
-		{{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: database.COLLECTION_BUDGETS},
-			{Key: "localField", Value: "stages.related_budgets"},
-			{Key: "foreignField", Value: "_id"},
-			{Key: "as", Value: "stages.related_budgets_data"},
-		}}},
-		{{Key: "$addFields", Value: bson.D{
-			{Key: "stages.related_leads", Value: "$stages.related_leads_data"},
-			{Key: "stages.related_budgets", Value: "$stages.related_budgets_data"},
-		}}},
-		{{Key: "$project", Value: bson.D{
-			{Key: "stages.related_leads_data", Value: 0},
-			{Key: "stages.related_budgets_data", Value: 0},
-		}}},
-		{{Key: "$group", Value: bson.D{
-			{Key: "_id", Value: "$_id"},
-			{Key: "name", Value: bson.D{{Key: "$first", Value: "$name"}}},
-			{Key: "type", Value: bson.D{{Key: "$first", Value: "$type"}}},
-			{Key: "stages", Value: bson.D{{Key: "$push", Value: "$stages"}}},
-			{Key: "created_at", Value: bson.D{{Key: "$first", Value: "$created_at"}}},
-			{Key: "updated_at", Value: bson.D{{Key: "$first", Value: "$updated_at"}}},
-		}}},
-	}
-
-	cursor, err := collection.Aggregate(ctx, pipeline)
+	cursor, err := collection.Find(ctx, bson.M{})
 	if err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_FUNNELS_IN_MONGODB)
 		return
@@ -70,18 +38,6 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	if err := cursor.All(ctx, &funnels); err != nil {
 		utils.SendResponse(w, http.StatusInternalServerError, "", nil, utils.CANNOT_FIND_FUNNELS_IN_MONGODB)
 		return
-	}
-
-	for i, funnel := range funnels {
-		stages, hasStages := funnel["stages"].(bson.A)
-		if hasStages {
-			for j, stageObj := range stages {
-				if stage, isStage := stageObj.(bson.M); isStage {
-					stages[j] = stage
-				}
-			}
-			funnels[i]["stages"] = stages
-		}
 	}
 
 	utils.SendResponse(w, http.StatusOK, "", funnels, 0)

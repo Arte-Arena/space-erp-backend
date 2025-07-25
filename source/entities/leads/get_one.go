@@ -222,33 +222,6 @@ func buildFilterForGetOne(r *http.Request, id bson.ObjectID) bson.D {
 }
 
 func getLeadCurrentFunnelAndStage(ctx context.Context, mongoClient *mongo.Client, dbName string, leadID any) (funnelName string, stageName string, err error) {
-	funnelsCollection := mongoClient.Database(dbName).Collection("funnels")
-	pipeline := mongo.Pipeline{
-		{{Key: "$unwind", Value: "$stages"}},
-		{{Key: "$match", Value: bson.D{{Key: "stages.related_leads", Value: leadID}}}},
-		{{Key: "$limit", Value: 1}},
-		{{Key: "$project", Value: bson.D{
-			{Key: "funnelName", Value: "$name"},
-			{Key: "stageName", Value: "$stages.name"},
-			{Key: "_id", Value: 0},
-		}}},
-	}
-	cursor, err := funnelsCollection.Aggregate(ctx, pipeline)
-	if err != nil {
-		return "", "", err
-	}
-	defer cursor.Close(ctx)
-
-	if cursor.Next(ctx) {
-		var result struct {
-			FunnelName string `bson:"funnelName"`
-			StageName  string `bson:"stageName"`
-		}
-		if err := cursor.Decode(&result); err != nil {
-			return "", "", err
-		}
-		return result.FunnelName, result.StageName, nil
-	}
-
+	// Relacionamento removido - não há mais related_leads nos funnels
 	return "", "", nil
 }
