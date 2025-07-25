@@ -273,6 +273,7 @@ func CreateOneWebhookWhatsapp(w http.ResponseWriter, r *http.Request) {
 				"last_message_sender":                "client",
 				"last_message_from_client_timestamp": fmt.Sprint(now.Unix()),
 				"updated_at":                         updatedAt,
+				"closed":                             false,
 				"lead_id":                            leadDoc.ID, // Usar ID real
 			},
 			"$setOnInsert": bson.M{
