@@ -16,6 +16,7 @@ const (
 	COLLECTION_USERS                      = "users"
 	COLLECTION_CLIENTS                    = "clients"
 	COLLECTION_FUNNELS_HISTORY            = "funnels_history"
+	COLLECTION_FUNNELS_PLACEMENTS         = "funnels_placements"
 	COLLECTION_SPACE_DESK_EVENTS_WHATSAPP = "space_desk_events_whatsapp"
 	COLLECTION_SPACE_DESK_CHAT            = "space_desk_chat"
 	COLLECTION_SPACE_DESK_MESSAGE         = "space_desk_message"

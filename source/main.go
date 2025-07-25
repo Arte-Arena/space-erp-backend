@@ -5,6 +5,7 @@ import (
 	"api/entities/clients"
 	"api/entities/funnels"
 	funnelshistory "api/entities/funnels_history"
+	funnelsplacements "api/entities/funnels_placements"
 	"api/entities/leads"
 	"api/entities/orders"
 	"api/entities/report"
@@ -79,6 +80,11 @@ func main() {
 
 	mux.Handle("POST /v1/funnels_history", middlewares.LaravelAuth(http.HandlerFunc(funnelshistory.CreateOne)))
 	mux.Handle("GET /v1/funnels_history/{id}", middlewares.LaravelAuth(http.HandlerFunc(funnelshistory.GetAll)))
+
+	mux.Handle("GET /v1/funnels_placements", middlewares.LaravelAuth(http.HandlerFunc(funnelsplacements.GetAll)))
+	mux.Handle("GET /v1/funnels_placements/{id}", middlewares.LaravelAuth(http.HandlerFunc(funnelsplacements.GetOne)))
+	mux.Handle("POST /v1/funnels_placements", middlewares.LaravelAuth(http.HandlerFunc(funnelsplacements.CreateOne)))
+	mux.Handle("PATCH /v1/funnels_placements/{id}", middlewares.LaravelAuth(http.HandlerFunc(funnelsplacements.UpdateOne)))
 
 	mux.Handle("GET /v1/space-desk/chats", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllChats)))
 
