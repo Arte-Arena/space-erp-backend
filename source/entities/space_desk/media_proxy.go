@@ -15,7 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -92,7 +91,11 @@ func HandlerMediaBase64(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// --- busca no MongoDB a chave primária/secundária ---
+	// obter chave do numero pelo qual esta midia foi enviada
+	// na collection space_desk_chat, temos o campo company_phone_number
+	// e o campo company_phone_number_2 que é o numero do whatsapp do suporte
+	// temos o midia id e podemos dar find no campo body da collection space_desk_messages
+
 	ctx, cancel := context.WithTimeout(r.Context(), database.MONGO_TIMEOUT)
 	defer cancel()
 	mongoURI := os.Getenv(utils.MONGODB_URI)
@@ -105,13 +108,18 @@ func HandlerMediaBase64(w http.ResponseWriter, r *http.Request) {
 	}
 	defer dbClient.Disconnect(ctx)
 
+	// Buscar informações do chat
 	var chatDoc struct {
 		CompanyPhoneNumber string `bson:"company_phone_number"`
 	}
-	objID, _ := bson.ObjectIDFromHex(chatID)
+	objID, err := bson.ObjectIDFromHex(chatID)
+	if err != nil {
+		utils.SendResponse(w, http.StatusBadRequest, "Chat ID inválido", nil, utils.CANNOT_FIND_SPACE_DESK_CHAT_ID)
+		return
+	}
+
 	col := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_CHAT)
 	if err := col.FindOne(ctx, bson.M{"_id": objID}).Decode(&chatDoc); err != nil {
-		clearFileCache(mediaID)
 		if err == mongo.ErrNoDocuments {
 			utils.SendResponse(w, http.StatusNotFound, "Chat não encontrado", nil, utils.CANNOT_FIND_SPACE_DESK_GROUP_ID_FORMAT)
 		} else {
@@ -120,28 +128,58 @@ func HandlerMediaBase64(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Configura Redis
-	var rdb *redis.Client
-	redisURI := os.Getenv("REDIS_URI")
-	opts, err := redis.ParseURL(redisURI)
-	if err == nil {
-		rdb = redis.NewClient(opts)
-		defer rdb.Close()
+	// Buscar a mensagem específica para verificar se foi enviada pela empresa ou pelo cliente
+	var messageDoc struct {
+		From string `bson:"from"`
 	}
+	colMessages := dbClient.Database(database.GetDB()).Collection(database.COLLECTION_SPACE_DESK_MESSAGE)
 
-	redisKey := "spacedesk:media:env:" + mediaID
-	cachedEnv := ""
-	if rdb != nil {
-		val, err := rdb.Get(ctx, redisKey).Result()
-		if err == nil {
-			cachedEnv = val
+	// Tentar encontrar a mensagem pelo media_id primeiro (mensagens do cliente)
+	err = colMessages.FindOne(ctx, bson.M{"media_id": mediaID}).Decode(&messageDoc)
+	if err != nil {
+		// Se não encontrar pelo media_id, tentar pelo body (mensagens da empresa)
+		err = colMessages.FindOne(ctx, bson.M{"body": mediaID}).Decode(&messageDoc)
+		if err != nil {
+			log.Printf("[MediaDownload][%s] message not found by media_id or body: %v", mediaID, err)
+			// Se não encontrar a mensagem, usar a lógica baseada no company_phone_number
+		} else {
+			log.Printf("[MediaDownload][%s] message found by body (company message)", mediaID)
 		}
+	} else {
+		log.Printf("[MediaDownload][%s] message found by media_id (client message)", mediaID)
 	}
 
 	primaryKey := os.Getenv(utils.SPACE_DESK_API_KEY)
 	altKey := os.Getenv(utils.SPACE_DESK_API_KEY_2)
 
-	// 1) Cache lookup
+	// Determinar qual chave usar baseado na lógica do sistema
+	var usedKey string
+	var keyReason string
+
+	if chatDoc.CompanyPhoneNumber == "5511958339942" {
+		usedKey = altKey
+		keyReason = "client message (last_message_sender)"
+
+		if messageDoc.From == "company" {
+			usedKey = primaryKey
+			keyReason = "company message (from field)"
+		}
+
+	} else {
+		usedKey = primaryKey
+		keyReason = "default phone (551123371548)"
+	}
+
+	// e verificar se a mensagem é enviada pelo cliente ou pelo company
+	// caso company env 1
+	// caso client, verificamos se o campo company_phone_number é o 1 ou o 2
+	// se for o 1, usamos a chave primária
+	// se for o 2, usamos a chave secundária
+
+	// Log adicional para debug
+	log.Printf("[MediaDownload][%s] Debug - chatDoc.CompanyPhoneNumber: %s, messageDoc.From: %s, keyReason: %s",
+		mediaID, chatDoc.CompanyPhoneNumber, messageDoc.From, keyReason)
+
 	base64CacheMutex.RLock()
 	if item, ok := base64Cache[mediaID]; ok && time.Since(item.timestamp) < base64CacheTTL {
 		base64CacheMutex.RUnlock()
@@ -154,11 +192,7 @@ func HandlerMediaBase64(w http.ResponseWriter, r *http.Request) {
 	client := &http.Client{Timeout: 15 * time.Second}
 	metaURL := fmt.Sprintf("https://waba-v2.360dialog.io/%s", mediaID)
 
-	usedKey := primaryKey
-	if cachedEnv == "2" {
-		usedKey = altKey
-	}
-
+	// Tentar com a chave determinada
 	meta, code10, ferr := fetchMeta(client, metaURL, usedKey)
 	if ferr != nil && !code10 {
 		log.Printf("[Base64] metadata error: %v", ferr)
@@ -166,20 +200,11 @@ func HandlerMediaBase64(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if code10 && cachedEnv == "" {
-		log.Printf("[Base64] Permission denied com primary, retrying with fallback key")
-		meta, code10, ferr = fetchMeta(client, metaURL, altKey)
-		if ferr != nil || code10 {
-			log.Printf("[Base64] fallback also failed: %v code10=%v", ferr, code10)
-			http.Error(w, "Permission denied na API", http.StatusForbidden)
-			return
-		}
-		usedKey = altKey
-		if rdb != nil {
-			rdb.Set(ctx, redisKey, "2", 90*24*time.Hour)
-		}
-	} else if cachedEnv == "" && rdb != nil {
-		rdb.Set(ctx, redisKey, "1", 90*24*time.Hour)
+	// Se der erro de permissão (code 10), tentar com a chave alternativa
+	if code10 {
+		log.Printf("[Base64] Permission denied com chave selecionada para %s", usedKey)
+		utils.SendResponse(w, http.StatusForbidden, "Permission denied na API", nil, 3)
+		return
 	}
 
 	signed := strings.Replace(meta.URL,
