@@ -123,9 +123,13 @@ func GetAllChats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	totalPages := int((totalItems + int64(limit) - 1) / int64(limit))
+	sortField := "last_message_timestamp"
+	if closedVal, ok := filter["closed"]; ok && closedVal == true {
+		sortField = "updated_at"
+	}
 
 	findOptions := options.Find().
-		SetSort(bson.D{{Key: "last_message_timestamp", Value: -1}}).
+		SetSort(bson.D{{Key: sortField, Value: -1}}).
 		SetSkip(int64(skip)).
 		SetLimit(int64(limit))
 
