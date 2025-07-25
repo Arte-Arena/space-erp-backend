@@ -217,6 +217,7 @@ func CreateOneMedia(w http.ResponseWriter, r *http.Request) {
 
 			newRaw := bson.M{
 				"body":              mediaId,
+				"media_id":          mediaId,
 				"chat_id":           objID,
 				"by":                userId,
 				"from":              "company",
