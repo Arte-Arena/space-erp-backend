@@ -85,6 +85,7 @@ func main() {
 	mux.Handle("GET /v1/funnels_placements/{id}", middlewares.LaravelAuth(http.HandlerFunc(funnelsplacements.GetOne)))
 	mux.Handle("POST /v1/funnels_placements", middlewares.LaravelAuth(http.HandlerFunc(funnelsplacements.CreateOne)))
 	mux.Handle("PATCH /v1/funnels_placements/{id}", middlewares.LaravelAuth(http.HandlerFunc(funnelsplacements.UpdateOne)))
+	mux.Handle("DELETE /v1/funnels_placements/{id}", middlewares.LaravelAuth(http.HandlerFunc(funnelsplacements.DeleteOne)))
 	mux.HandleFunc("/v1/ws/funnels_placements", funnelsplacements.FunnelPlacementWebSocketHandler)
 
 	mux.Handle("GET /v1/space-desk/chats", middlewares.LaravelAuth(http.HandlerFunc(spacedesk.GetAllChats)))

@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
@@ -20,9 +21,6 @@ func CreateOne(w http.ResponseWriter, r *http.Request) {
 		utils.SendResponse(w, http.StatusBadRequest, "", nil, FUNNELS_PLACEMENTS_INVALID_REQUEST_DATA)
 		return
 	}
-
-	funnelPlacement.CreatedAt = time.Now()
-	funnelPlacement.UpdatedAt = time.Now()
 
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGO_TIMEOUT)
 	defer cancel()
@@ -37,6 +35,24 @@ func CreateOne(w http.ResponseWriter, r *http.Request) {
 	defer mongoClient.Disconnect(ctx)
 
 	collection := mongoClient.Database(database.GetDB()).Collection(database.COLLECTION_FUNNELS_PLACEMENTS)
+
+	filter := bson.D{
+		{Key: "funnel_id", Value: funnelPlacement.FunnelID},
+		{Key: "related_lead", Value: funnelPlacement.RelatedLead},
+	}
+
+	var existingPlacement schemas.FunnelPlacement
+	err = collection.FindOne(ctx, filter).Decode(&existingPlacement)
+	if err == nil {
+		utils.SendResponse(w, http.StatusConflict, "", nil, LEAD_ALREADY_EXISTS_IN_FUNNEL)
+		return
+	} else if err != mongo.ErrNoDocuments {
+		utils.SendResponse(w, http.StatusInternalServerError, "", nil, CANNOT_FIND_FUNNEL_PLACEMENTS_IN_MONGODB)
+		return
+	}
+
+	funnelPlacement.CreatedAt = time.Now()
+	funnelPlacement.UpdatedAt = time.Now()
 
 	_, err = collection.InsertOne(ctx, funnelPlacement)
 	if err != nil {
